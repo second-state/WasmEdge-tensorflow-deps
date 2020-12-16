@@ -8,6 +8,11 @@ This project is under the Apache-2.0 License as the same as the TensorFlow proje
 
 Credit: [TensorFlow](https://github.com/tensorflow/tensorflow).
 
+We used [libjpeg](http://ijg.org/) and [libpng](http://www.libpng.org/pub/png/libpng.html) for image processing in [Second State VM (SSVM) with TensorFlow extension](https://github.com/second-state/ssvm-tensorflow).
+To support `CentOS 7.6`, we need to build a new version of `libjpeg` and `libpng`.
+
+Credit: [libjpeg](http://ijg.org/) and [libpng](http://www.libpng.org/pub/png/libpng.html).
+
 # Build on CentOS 7.6
 
 ## Clone the TensorFlow Source
@@ -79,3 +84,52 @@ and the version can be checked with command `python3.8 --version`.
 ```
 
 The TensorFlow shared library will be at `bazel-bin/tensorflow/libtensorflow.so.2.4.0`, `bazel-bin/tensorflow/libtensorflow_framework.so.2.4.0`, and `bazel-bin/tensorflow/lite/c/libtensorflowlite_c.so`.
+
+## Download And Build the libjpeg
+
+```bash
+(docker) $ wget http://ijg.org/files/jpegsrc.v8c.tar.gz
+(docker) $ cd /root
+(docker) $ tar -zxvf jpegsrc.v8c.tar.gz
+(docker) $ cd jpeg-8c
+(docker) $ ./configure --disable-static && make
+```
+
+The JPEG shared library will be at `.libs/libjpeg.so.8.3.0`.
+
+## Download And Build the libpng
+
+```bash
+(docker) $ yum install -y bzip2
+(docker) $ cd /root
+(docker) $ wget https://downloads.sourceforge.net/libpng/libpng-1.6.37.tar.xz
+(docker) $ tar Jxvf libpng-1.6.37.tar.xz
+(docker) $ cd libpng-1.6.37
+(docker) $ ./configure --disable-static && make
+```
+
+The PNG shared library will be at `.libs/libpng16.so.16.37.0`.
+
+
+# Pre-Built Shared Library GLIBC Requirements
+
+* libtensorflow.so.2.4.0
+  * GLIBC_2.17
+  * GLIBCXX_3.4.19
+  * CXXABI_1.3.7
+
+* libtensorflow_framework.so.2.4.0
+  * GLIBC_2.16
+  * GLIBCXX_3.4.19
+  * CXXABI_1.3.7
+
+* libtensorflowlite_c.so
+  * GLIBC_2.14
+  * GLIBCXX_3.4.19
+  * CXXABI_1.3.5
+
+* libjpeg.so.8
+  * GLIBC_2.14
+
+* libpng16.so.16
+  * GLIBC_2.14
