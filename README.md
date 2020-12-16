@@ -1,21 +1,28 @@
 # SSVM-Tensorflow Dependencies
 
-This repository is the dependencies of the [Second State VM (SSVM) with TensorFlow extension](https://github.com/second-state/ssvm-tensorflow).
+This repository provides pre-built dependencies for the [Second State VM (SSVM) with TensorFlow extension project](https://github.com/second-state/ssvm-tensorflow).
 
-The Tensorflow official repository provided the shared library built from Ubuntu 18.04.
-To reduce the compilation time, we create this project to build and release the pre-built shared library of TensorFlow built from CentOS 7.6.1810 for the older GLIBC versions.
+## Motivation
+
+The TensorFlow official repository only provides a shared library which is compiled on Ubuntu 18.04. Hence, we cannot use this pre-built shared library on some legacy systems such as CentOS 7.6.1810. The obvious issue is that the GLIBC version is too old, so the pre-built shared library cannot be executed.
+
+But building the dependencies on the legacy system takes lots of time. To reduce the compilation time, we create this project to compile and release the pre-built shared library including TensorFlow and its other dependencies.
+
+## License
+
 This project is under the Apache-2.0 License as the same as the TensorFlow project.
 
-Credit: [TensorFlow](https://github.com/tensorflow/tensorflow).
+Beside TensorFlow project, we also use [libjpeg](http://ijg.org/) and [libpng](http://www.libpng.org/pub/png/libpng.html) for image processing in [Second State VM (SSVM) with TensorFlow extension](https://github.com/second-state/ssvm-tensorflow).
 
-We used [libjpeg](http://ijg.org/) and [libpng](http://www.libpng.org/pub/png/libpng.html) for image processing in [Second State VM (SSVM) with TensorFlow extension](https://github.com/second-state/ssvm-tensorflow).
-To support `CentOS 7.6`, we need to build a new version of `libjpeg` and `libpng`.
+### Credits
 
-Credit: [libjpeg](http://ijg.org/) and [libpng](http://www.libpng.org/pub/png/libpng.html).
+- [TensorFlow](https://github.com/tensorflow/tensorflow)
+- [libjpeg](http://ijg.org/)
+- [libpng](http://www.libpng.org/pub/png/libpng.html)
 
-# Build on CentOS 7.6
+## How to build on the legacy operating system - CentOS 7.6.1810
 
-## Clone the TensorFlow Source
+### Clone the TensorFlow source
 
 ```bash
 $ git clone https://github.com/tensorflow/tensorflow.git tensorflow_src
@@ -23,13 +30,14 @@ $ cd tensorflow_src
 $ git checkout v2.4.0
 ```
 
-## Pull the Docker Image And Run
+### Pull the CentOS docker image and run
 
 ```bash
+$ docker pull centos:7.6.1810
 $ docker run -it --rm -v $(pwd):/root/$(basename $(pwd)) centos:7.6.1810
 ```
 
-## Update And Install GCC-7.3.1
+### Update and install GCC-7.3.1
 
 ```bash
 (docker) $ yum update
@@ -39,9 +47,9 @@ $ docker run -it --rm -v $(pwd):/root/$(basename $(pwd)) centos:7.6.1810
 ```
 
 The gcc installation path will be at `/opt/rh/devtoolset-7/root/usr/bin/`,
-and the gcc version can be checked with command `gcc -v`.
+and the gcc version can be checked with the command `gcc -v`.
 
-## Build And Install Python 3.8.6
+### Build and install Python 3.8.6
 
 ```bash
 (docker) $ cd /root
@@ -54,9 +62,9 @@ and the gcc version can be checked with command `gcc -v`.
 ```
 
 The python installation path will be at `/usr/local/bin/python3.8`,
-and the version can be checked with command `python3.8 --version`.
+and the version can be checked with the command `python3.8 --version`.
 
-## Install Bazel
+### Install Bazel 1.7.4
 
 ```bash
 (docker) $ cd /root
@@ -65,7 +73,7 @@ and the version can be checked with command `python3.8 --version`.
 (docker) $ mv bazelisk-linux-amd64 /usr/local/bin/bazel
 ```
 
-## Install the Required Python Dependencies
+### Install the Python packages which are required by the TensorFlow project
 
 ```bash
 (docker) $ pip3 install -U --user pip six numpy wheel setuptools mock 'future>=0.17.1'
@@ -73,7 +81,7 @@ and the version can be checked with command `python3.8 --version`.
 (docker) $ pip3 install -U --user keras_preprocessing --no-deps
 ```
 
-## Build the TensorFlow Shared Library
+### Build the TensorFlow shared library
 
 ```bash
 (docker) $ yum install -y git which
@@ -85,11 +93,11 @@ and the version can be checked with command `python3.8 --version`.
 
 The TensorFlow shared library will be at `bazel-bin/tensorflow/libtensorflow.so.2.4.0`, `bazel-bin/tensorflow/libtensorflow_framework.so.2.4.0`, and `bazel-bin/tensorflow/lite/c/libtensorflowlite_c.so`.
 
-## Download And Build the libjpeg
+### Download and build the libjpeg
 
 ```bash
-(docker) $ wget http://ijg.org/files/jpegsrc.v8c.tar.gz
 (docker) $ cd /root
+(docker) $ wget http://ijg.org/files/jpegsrc.v8c.tar.gz
 (docker) $ tar -zxvf jpegsrc.v8c.tar.gz
 (docker) $ cd jpeg-8c
 (docker) $ ./configure --disable-static && make
@@ -97,7 +105,7 @@ The TensorFlow shared library will be at `bazel-bin/tensorflow/libtensorflow.so.
 
 The JPEG shared library will be at `.libs/libjpeg.so.8.3.0`.
 
-## Download And Build the libpng
+### Download and build the libpng
 
 ```bash
 (docker) $ yum install -y bzip2
@@ -111,25 +119,12 @@ The JPEG shared library will be at `.libs/libjpeg.so.8.3.0`.
 The PNG shared library will be at `.libs/libpng16.so.16.37.0`.
 
 
-# Pre-Built Shared Library GLIBC Requirements
+## Minimum requirements of our pre-built shared libraries
 
-* libtensorflow.so.2.4.0
-  * GLIBC_2.17
-  * GLIBCXX_3.4.19
-  * CXXABI_1.3.7
-
-* libtensorflow_framework.so.2.4.0
-  * GLIBC_2.16
-  * GLIBCXX_3.4.19
-  * CXXABI_1.3.7
-
-* libtensorflowlite_c.so
-  * GLIBC_2.14
-  * GLIBCXX_3.4.19
-  * CXXABI_1.3.5
-
-* libjpeg.so.8
-  * GLIBC_2.14
-
-* libpng16.so.16
-  * GLIBC_2.14
+| Pre-built shared library          | GLIBC          | GLIBCXX       | CXXABI          |
+| --------------------------        | -------------- | ------------- | --------------- |
+| libtensorflow.so.2.4.0            | 2.17           | 3.4.19        | 1.3.7           |
+| libtensorflow\_framework.so.2.4.0 | 2.16           | 3.4.19        | 1.3.7           |
+| libtensorflowlite\_c.so           | 2.14           | 3.4.19        | 1.3.5           |
+| libjpeg.so.8                      | 2.14           | -             | -               |
+| libpng16.so.16                    | 2.14           | -             | -               |
