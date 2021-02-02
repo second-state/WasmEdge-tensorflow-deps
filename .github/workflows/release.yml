@@ -1,0 +1,97 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  create:
+    name: Create Release
+    runs-on: ssvm
+    container:
+      image: secondstate/ssvm:ubuntu-build-gcc
+    outputs:
+      version: ${{ steps.prep.outputs.version }}
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Get version
+        id: prep
+        run: |
+          echo ::set-output name=version::$(git describe --tag)
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: SSVM-TensorFlow-Dependencies ${{ steps.prep.outputs.version }}
+          body_path: .CurrentChangelog.md
+          draft: false
+          prerelease: false
+  build_manylinux2014_x86_64:
+    name: Build libtensorflow.so and libtensorflow_c.so on manylinux2014_x86_64 platform
+    needs: [create]
+    runs-on: ssvm
+    container:
+      image: secondstate/ssvm:manylinux2014_x86_64
+    steps:
+      - name: Build manylinux2014_x86_64 package
+        run: |
+          git clone -b v2.4.0 https://github.com/tensorflow/tensorflow.git tensorflow_src
+          yum update -y
+          yum install -y centos-release-scl
+          yum install -y devtoolset-7-gcc*
+          scl enable devtoolset-7 bash
+          yum install -y wget bzip2-devel
+          wget https://www.python.org/ftp/python/3.8.6/Python-3.8.6.tgz
+          tar -zxvf Python-3.8.6.tgz
+          cd Python-3.8.6
+          CXX=/opt/rh/devtoolset-7/root/usr/bin/g++ ./configure --enable-optimizations
+          make && make install
+          cd ..
+          wget https://github.com/bazelbuild/bazelisk/releases/download/v1.7.4/bazelisk-linux-amd64
+          chmod u+x bazelisk-linux-amd64
+          mv bazelisk-linux-amd64 /usr/local/bin/bazel
+          pip3 install -U --user pip six numpy wheel setuptools mock 'future>=0.17.1'
+          pip3 install -U --user keras_applications --no-deps
+          pip3 install -U --user keras_preprocessing --no-deps
+          cd tensorflow_src
+          PYTHON_BIN_PATH=/usr/local/bin/python3 USE_DEFAULT_PYTHON_LIB_PATH=1 TF_NEED_CUDA=0 TF_NEED_ROCM=0 TF_DOWNLOAD_CLANG=0 TF_NEED_MPI=0 CC_OPT_FLAGS="-march=native -Wno-sign-compare" TF_SET_ANDROID_WORKSPACE=0 ./configure
+          BAZEL_LINKLIBS=-l%:libstdc++.a bazel build -c opt --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" //tensorflow:libtensorflow.so
+          BAZEL_LINKLIBS=-l%:libstdc++.a bazel build -c opt --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" //tensorflow/lite/c:libtensorflowlite_c.so
+          cd ..
+          cp tensorflow_src/bazel-bin/tensorflow/lite/c/libtensorflowlite_c.so libtensorflowlite_c.so
+          tar -zcvf tflite.tar.gz libtensorflowlite_c.so
+          cp tensorflow_src/bazel-bin/tensorflow/libtensorflow.so.2.4.0 libtensorflow.so.2.4.0
+          cp tensorflow_src/bazel-bin/tensorflow/libtensorflow_framework.so.2.4.0 libtensorflow_framework.so.2.4.0
+          tar -zcvf tf.tar.gz libtensorflow.so.2.4.0 libtensorflow_framework.so.2.4.0
+
+  upload_manylinux2014_x86_64_package:
+    name: Upload SSVM-TensorFlow-Deps manylinux2014 x86_64 package
+    needs: [create, build_manylinux2014_x86_64]
+    runs-on: ssvm
+    container:
+      image: secondstate/ssvm:ubuntu-build-gcc
+    steps:
+      - name: Upload manylinux2014_x86_64 TF tar.gz package
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create.outputs.upload_url }}
+          asset_path: tf.tar.gz
+          asset_name: ssvm-tensorflow-deps-TF-${{ needs.create.outputs.version }}-manylinux2014_x86_64.tar.gz
+          asset_content_type: application/x-gzip
+      - name: Upload manylinux2014_x86_64 TFLite tar.gz package
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create.outputs.upload_url }}
+          asset_path: tflite.tar.gz
+          asset_name: ssvm-tensorflow-deps-TFLite-${{ needs.create.outputs.version }}-manylinux2014_x86_64.tar.gz
+          asset_content_type: application/x-gzip
