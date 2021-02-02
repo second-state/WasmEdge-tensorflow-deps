@@ -6,19 +6,15 @@ This repository provides pre-built dependencies for the [Second State VM (SSVM) 
 
 The TensorFlow official repository only provides a shared library which is compiled on Ubuntu 18.04. Hence, we cannot use this pre-built shared library on some legacy systems such as CentOS 7.6.1810. The obvious issue is that the GLIBC version is too old, so the pre-built shared library cannot be executed.
 
-But building the dependencies on the legacy system takes lots of time. To reduce the compilation time, we create this project to compile and release the pre-built shared library including TensorFlow and its other dependencies.
+But building the dependencies on the legacy system takes lots of time. To reduce the compilation time, we create this project to compile and release the pre-built TensorFlow shared library.
 
 ## License
 
 This project is under the Apache-2.0 License as the same as the TensorFlow project.
 
-Beside TensorFlow project, we also use [libjpeg](http://ijg.org/) and [libpng](http://www.libpng.org/pub/png/libpng.html) for image processing in [Second State VM (SSVM) with TensorFlow extension](https://github.com/second-state/ssvm-tensorflow).
-
 ### Credits
 
 - [TensorFlow](https://github.com/tensorflow/tensorflow)
-- [libjpeg](http://ijg.org/)
-- [libpng](http://www.libpng.org/pub/png/libpng.html)
 
 ## How to build on the legacy operating system - CentOS 7.6.1810
 
@@ -93,32 +89,6 @@ and the version can be checked with the command `python3.8 --version`.
 
 The TensorFlow shared library will be at `bazel-bin/tensorflow/libtensorflow.so.2.4.0`, `bazel-bin/tensorflow/libtensorflow_framework.so.2.4.0`, and `bazel-bin/tensorflow/lite/c/libtensorflowlite_c.so`.
 
-### Download and build the libjpeg
-
-```bash
-(docker) $ cd /root
-(docker) $ wget http://ijg.org/files/jpegsrc.v8c.tar.gz
-(docker) $ tar -zxvf jpegsrc.v8c.tar.gz
-(docker) $ cd jpeg-8c
-(docker) $ ./configure --disable-static && make
-```
-
-The JPEG shared library will be at `.libs/libjpeg.so.8.3.0`.
-
-### Download and build the libpng
-
-```bash
-(docker) $ yum install -y bzip2
-(docker) $ cd /root
-(docker) $ wget https://downloads.sourceforge.net/libpng/libpng-1.6.37.tar.xz
-(docker) $ tar Jxvf libpng-1.6.37.tar.xz
-(docker) $ cd libpng-1.6.37
-(docker) $ ./configure --disable-static && make
-```
-
-The PNG shared library will be at `.libs/libpng16.so.16.37.0`.
-
-
 ## Minimum requirements of our pre-built shared libraries
 
 | Pre-built shared library          | GLIBC          | GLIBCXX       | CXXABI          |
@@ -126,5 +96,3 @@ The PNG shared library will be at `.libs/libpng16.so.16.37.0`.
 | libtensorflow.so.2.4.0            | 2.17           | 3.4.19        | 1.3.7           |
 | libtensorflow\_framework.so.2.4.0 | 2.16           | 3.4.19        | 1.3.7           |
 | libtensorflowlite\_c.so           | 2.14           | 3.4.19        | 1.3.5           |
-| libjpeg.so.8                      | 2.14           | -             | -               |
-| libpng16.so.16                    | 2.14           | -             | -               |
