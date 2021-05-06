@@ -8,9 +8,9 @@ on:
 jobs:
   create:
     name: Create Release
-    runs-on: ssvm
+    runs-on: ubuntu-latest
     container:
-      image: secondstate/ssvm:ubuntu-build-gcc
+      image: wasmedge/wasmedge:ubuntu-build-gcc
     outputs:
       version: ${{ steps.prep.outputs.version }}
       upload_url: ${{ steps.create_release.outputs.upload_url }}
@@ -28,25 +28,27 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref }}
-          release_name: SSVM-TensorFlow-Dependencies ${{ steps.prep.outputs.version }}
+          release_name: WasmEdge-TensorFlow-Dependencies ${{ steps.prep.outputs.version }}
           body_path: .CurrentChangelog.md
           draft: false
           prerelease: false
-  build_manylinux2014_x86_64:
-    name: Build libtensorflow.so and libtensorflow_c.so on manylinux2014_x86_64 platform
-    needs: [create]
-    runs-on: ssvm
+  build_and_upload_manylinux2014_x86_64:
+    name: Build and upload libtensorflow.so and libtensorflow_c.so on manylinux2014_x86_64 platform
+    needs: create
+    runs-on: ubuntu-latest
     container:
-      image: secondstate/ssvm:manylinux2014_x86_64
+      image: wasmedge/wasmedge:manylinux2014_x86_64
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
       - name: Build manylinux2014_x86_64 package
         run: |
           git clone -b v2.4.0 https://github.com/tensorflow/tensorflow.git tensorflow_src
-          yum update -y
+          yum update -y || true
           yum install -y centos-release-scl
           yum install -y devtoolset-7-gcc*
           scl enable devtoolset-7 bash
-          yum install -y wget bzip2-devel
+          yum install -y wget bzip2-devel libffi-devel
           wget https://www.python.org/ftp/python/3.8.6/Python-3.8.6.tgz
           tar -zxvf Python-3.8.6.tgz
           cd Python-3.8.6
@@ -69,14 +71,6 @@ jobs:
           cp tensorflow_src/bazel-bin/tensorflow/libtensorflow.so.2.4.0 libtensorflow.so.2.4.0
           cp tensorflow_src/bazel-bin/tensorflow/libtensorflow_framework.so.2.4.0 libtensorflow_framework.so.2.4.0
           tar -zcvf tf.tar.gz libtensorflow.so.2.4.0 libtensorflow_framework.so.2.4.0
-
-  upload_manylinux2014_x86_64_package:
-    name: Upload SSVM-TensorFlow-Deps manylinux2014 x86_64 package
-    needs: [create, build_manylinux2014_x86_64]
-    runs-on: ssvm
-    container:
-      image: secondstate/ssvm:ubuntu-build-gcc
-    steps:
       - name: Upload manylinux2014_x86_64 TF tar.gz package
         uses: actions/upload-release-asset@v1
         env:
@@ -84,7 +78,7 @@ jobs:
         with:
           upload_url: ${{ needs.create.outputs.upload_url }}
           asset_path: tf.tar.gz
-          asset_name: ssvm-tensorflow-deps-TF-${{ needs.create.outputs.version }}-manylinux2014_x86_64.tar.gz
+          asset_name: WasmEdge-tensorflow-deps-TF-${{ needs.create.outputs.version }}-manylinux2014_x86_64.tar.gz
           asset_content_type: application/x-gzip
       - name: Upload manylinux2014_x86_64 TFLite tar.gz package
         uses: actions/upload-release-asset@v1
@@ -93,5 +87,5 @@ jobs:
         with:
           upload_url: ${{ needs.create.outputs.upload_url }}
           asset_path: tflite.tar.gz
-          asset_name: ssvm-tensorflow-deps-TFLite-${{ needs.create.outputs.version }}-manylinux2014_x86_64.tar.gz
+          asset_name: WasmEdge-tensorflow-deps-TFLite-${{ needs.create.outputs.version }}-manylinux2014_x86_64.tar.gz
           asset_content_type: application/x-gzip

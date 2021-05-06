@@ -1,6 +1,6 @@
-# SSVM-Tensorflow Dependencies
+# WasmEdge-Tensorflow Dependencies
 
-This repository provides pre-built dependencies for the [Second State VM (SSVM) with TensorFlow extension project](https://github.com/second-state/ssvm-tensorflow).
+This repository provides pre-built dependencies for the [WasmEdge with TensorFlow extension project](https://github.com/second-state/WasmEdge-tensorflow) (formerly `SSVM`).
 
 ## Motivation
 
