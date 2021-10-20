@@ -1,3 +1,17 @@
+### 0.9.0-rc.1 (2021-10-20)
+
+This release is the pre-built shared libraries for [WasmEdge-tensorflow](https://github.com/second-state/WasmEdge-tensorflow) on `manylinux2014`.
+
+* Updated to TensorFlow v2.6.0
+
+### 0.8.2 (2021-10-20)
+
+This release is the pre-built shared libraries for [WasmEdge-tensorflow](https://github.com/second-state/WasmEdge-tensorflow) on `manylinux2014`.
+
+### 0.8.1 (2021-10-20)
+
+This release is the pre-built shared libraries for [WasmEdge-tensorflow](https://github.com/second-state/WasmEdge-tensorflow) on `manylinux2014`.
+
 ### 0.8.0 (2021-05-07)
 
 This release is the pre-built shared libraries for [WasmEdge-tensorflow](https://github.com/second-state/WasmEdge-tensorflow) on `manylinux2014`.

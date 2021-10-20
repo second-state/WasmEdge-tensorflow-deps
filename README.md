@@ -23,7 +23,7 @@ This project is under the Apache-2.0 License as the same as the TensorFlow proje
 ```bash
 $ git clone https://github.com/tensorflow/tensorflow.git tensorflow_src
 $ cd tensorflow_src
-$ git checkout v2.4.0
+$ git checkout v2.6.0
 ```
 
 ### Pull the CentOS docker image and run
@@ -87,12 +87,12 @@ and the version can be checked with the command `python3.8 --version`.
 (docker) $ BAZEL_LINKLIBS=-l%:libstdc++.a bazel build -c opt --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" //tensorflow/lite/c:libtensorflowlite_c.so
 ```
 
-The TensorFlow shared library will be at `bazel-bin/tensorflow/libtensorflow.so.2.4.0`, `bazel-bin/tensorflow/libtensorflow_framework.so.2.4.0`, and `bazel-bin/tensorflow/lite/c/libtensorflowlite_c.so`.
+The TensorFlow shared library will be at `bazel-bin/tensorflow/libtensorflow.so.2.6.0`, `bazel-bin/tensorflow/libtensorflow_framework.so.2.6.0`, and `bazel-bin/tensorflow/lite/c/libtensorflowlite_c.so`.
 
 ## Minimum requirements of our pre-built shared libraries
 
 | Pre-built shared library          | GLIBC          | GLIBCXX       | CXXABI          |
 | --------------------------        | -------------- | ------------- | --------------- |
-| libtensorflow.so.2.4.0            | 2.17           | 3.4.19        | 1.3.7           |
-| libtensorflow\_framework.so.2.4.0 | 2.16           | 3.4.19        | 1.3.7           |
+| libtensorflow.so.2.6.0            | 2.17           | 3.4.19        | 1.3.7           |
+| libtensorflow\_framework.so.2.6.0 | 2.16           | 3.4.19        | 1.3.7           |
 | libtensorflowlite\_c.so           | 2.14           | 3.4.19        | 1.3.5           |

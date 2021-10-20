@@ -30,7 +30,7 @@ jobs:
           tag_name: ${{ github.ref }}
           release_name: WasmEdge-TensorFlow-Dependencies ${{ steps.prep.outputs.version }}
           body_path: .CurrentChangelog.md
-          draft: false
+          draft: true
           prerelease: false
   build_and_upload_manylinux2014_x86_64:
     name: Build and upload libtensorflow.so and libtensorflow_c.so on manylinux2014_x86_64 platform
@@ -43,16 +43,13 @@ jobs:
         uses: actions/checkout@v2
       - name: Build manylinux2014_x86_64 package
         run: |
-          git clone -b v2.4.0 https://github.com/tensorflow/tensorflow.git tensorflow_src
+          git clone -b v2.6.0 https://github.com/tensorflow/tensorflow.git tensorflow_src
           yum update -y || true
-          yum install -y centos-release-scl
-          yum install -y devtoolset-7-gcc*
-          scl enable devtoolset-7 bash
           yum install -y wget bzip2-devel libffi-devel
           wget https://www.python.org/ftp/python/3.8.6/Python-3.8.6.tgz
           tar -zxvf Python-3.8.6.tgz
           cd Python-3.8.6
-          CXX=/opt/rh/devtoolset-7/root/usr/bin/g++ ./configure --enable-optimizations
+          ./configure --enable-optimizations
           make && make install
           cd ..
           wget https://github.com/bazelbuild/bazelisk/releases/download/v1.7.4/bazelisk-linux-amd64
@@ -68,9 +65,9 @@ jobs:
           cd ..
           cp tensorflow_src/bazel-bin/tensorflow/lite/c/libtensorflowlite_c.so libtensorflowlite_c.so
           tar -zcvf tflite.tar.gz libtensorflowlite_c.so
-          cp tensorflow_src/bazel-bin/tensorflow/libtensorflow.so.2.4.0 libtensorflow.so.2.4.0
-          cp tensorflow_src/bazel-bin/tensorflow/libtensorflow_framework.so.2.4.0 libtensorflow_framework.so.2.4.0
-          tar -zcvf tf.tar.gz libtensorflow.so.2.4.0 libtensorflow_framework.so.2.4.0
+          cp tensorflow_src/bazel-bin/tensorflow/libtensorflow.so.2.6.0 libtensorflow.so.2.6.0
+          cp tensorflow_src/bazel-bin/tensorflow/libtensorflow_framework.so.2.6.0 libtensorflow_framework.so.2.6.0
+          tar -zcvf tf.tar.gz libtensorflow.so.2.6.0 libtensorflow_framework.so.2.6.0
       - name: Upload manylinux2014_x86_64 TF tar.gz package
         uses: actions/upload-release-asset@v1
         env:
