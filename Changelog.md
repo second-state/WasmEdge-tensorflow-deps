@@ -1,3 +1,7 @@
+### 0.9.1-beta.1 (2022-01-21)
+
+This release is the pre-built shared libraries for [WasmEdge-tensorflow](https://github.com/second-state/WasmEdge-tensorflow) on `manylinux2014`.
+
 ### 0.9.1-alpha.1 (2022-01-13)
 
 This release is the pre-built shared libraries for [WasmEdge-tensorflow](https://github.com/second-state/WasmEdge-tensorflow) on `manylinux2014`.
