@@ -1,3 +1,10 @@
+### 0.9.1-beta.2 (2022-01-28)
+
+This release is the pre-built shared libraries for [WasmEdge-tensorflow](https://github.com/second-state/WasmEdge-tensorflow) on `manylinux2014`.
+
+* Added the manylinux2014_aarch64 support of TensorFlow-Lite.
+* Added the android_aarch64 support of TensorFlow-Lite.
+
 ### 0.9.1-beta.1 (2022-01-21)
 
 This release is the pre-built shared libraries for [WasmEdge-tensorflow](https://github.com/second-state/WasmEdge-tensorflow) on `manylinux2014`.

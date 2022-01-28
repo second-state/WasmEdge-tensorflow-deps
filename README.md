@@ -60,7 +60,7 @@ and the gcc version can be checked with the command `gcc -v`.
 The python installation path will be at `/usr/local/bin/python3.8`,
 and the version can be checked with the command `python3.8 --version`.
 
-### Install Bazel 1.7.4
+### Install Bazelisk 1.7.4
 
 ```bash
 (docker) $ cd /root
@@ -89,10 +89,39 @@ and the version can be checked with the command `python3.8 --version`.
 
 The TensorFlow shared library will be at `bazel-bin/tensorflow/libtensorflow.so.2.6.0`, `bazel-bin/tensorflow/libtensorflow_framework.so.2.6.0`, and `bazel-bin/tensorflow/lite/c/libtensorflowlite_c.so`.
 
-## Minimum requirements of our pre-built shared libraries
+### Minimum requirements of our pre-built shared libraries
 
 | Pre-built shared library          | GLIBC          | GLIBCXX       | CXXABI          |
 | --------------------------        | -------------- | ------------- | --------------- |
 | libtensorflow.so.2.6.0            | 2.17           | 3.4.19        | 1.3.7           |
 | libtensorflow\_framework.so.2.6.0 | 2.16           | 3.4.19        | 1.3.7           |
 | libtensorflowlite\_c.so           | 2.14           | 3.4.19        | 1.3.5           |
+
+## How to build TensorFlow-Lite shared library for Android platforms
+
+### Clone the TensorFlow source
+
+```bash
+$ git clone https://github.com/tensorflow/tensorflow.git tensorflow_src
+$ cd tensorflow_src
+$ git checkout v2.6.0
+```
+
+### Pull the WasmEdge docker image and run
+
+```bash
+$ docker pull wasmedge/wasmedge:latest
+$ docker run -it --rm -v $(pwd):/root/$(basename $(pwd)) wasmedge/wasmedge:latest
+```
+
+### Install Bazel 5.0.0
+
+```bash
+(docker) $ apt update && apt install -y unzip
+(docker) $ cd /root
+(docker) $ wget https://github.com/bazelbuild/bazel/releases/download/5.0.0/bazel-5.0.0-installer-linux-x86_64.sh
+(docker) $ chmod u+x bazel-5.0.0-installer-linux-x86_64.sh
+(docker) $ ./bazel-5.0.0-installer-linux-x86_64.sh
+```
+
+Work in progress. We will push the steps soon.
