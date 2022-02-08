@@ -31,43 +31,46 @@ jobs:
           release_name: WasmEdge-TensorFlow-Dependencies ${{ steps.prep.outputs.version }}
           body_path: .CurrentChangelog.md
           draft: true
-          prerelease: false
+          prerelease: true
   build_and_upload_manylinux2014_x86_64:
     name: Build and upload libtensorflow.so and libtensorflow_c.so on manylinux2014_x86_64 platform
     needs: create
     runs-on: ubuntu-latest
     container:
-      image: wasmedge/wasmedge:manylinux2014_x86_64
+      image: wasmedge/wasmedge:latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Build manylinux2014_x86_64 package
+          # ### Due to the limitation, we don't build on CI.
+          # git clone -b v2.6.0 https://github.com/tensorflow/tensorflow.git tensorflow_src
+          # yum update -y || true
+          # yum install -y wget bzip2-devel libffi-devel
+          # wget https://www.python.org/ftp/python/3.8.6/Python-3.8.6.tgz
+          # tar -zxf Python-3.8.6.tgz
+          # cd Python-3.8.6
+          # ./configure --enable-optimizations
+          # make && make install
+          # cd ..
+          # wget https://github.com/bazelbuild/bazelisk/releases/download/v1.7.4/bazelisk-linux-amd64
+          # chmod u+x bazelisk-linux-amd64
+          # mv bazelisk-linux-amd64 /usr/local/bin/bazel
+          # pip3 install -U --user pip six numpy wheel setuptools mock 'future>=0.17.1'
+          # pip3 install -U --user keras_applications --no-deps
+          # pip3 install -U --user keras_preprocessing --no-deps
+          # cd tensorflow_src
+          # PYTHON_BIN_PATH=/usr/local/bin/python3 USE_DEFAULT_PYTHON_LIB_PATH=1 TF_NEED_CUDA=0 TF_NEED_ROCM=0 TF_DOWNLOAD_CLANG=0 TF_NEED_MPI=0 CC_OPT_FLAGS="-march=native -Wno-sign-compare" TF_SET_ANDROID_WORKSPACE=0 ./configure
+          # BAZEL_LINKLIBS=-l%:libstdc++.a bazel build -c opt --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" //tensorflow:libtensorflow.so
+          # BAZEL_LINKLIBS=-l%:libstdc++.a bazel build -c opt --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" //tensorflow/lite/c:libtensorflowlite_c.so
+          # cd ..
+          # cp tensorflow_src/bazel-bin/tensorflow/lite/c/libtensorflowlite_c.so libtensorflowlite_c.so
+          # tar -zcvf tflite.tar.gz libtensorflowlite_c.so
+          # cp tensorflow_src/bazel-bin/tensorflow/libtensorflow.so.2.6.0 libtensorflow.so.2.6.0
+          # cp tensorflow_src/bazel-bin/tensorflow/libtensorflow_framework.so.2.6.0 libtensorflow_framework.so.2.6.0
+          # tar -zcvf tf.tar.gz libtensorflow.so.2.6.0 libtensorflow_framework.so.2.6.0
         run: |
-          git clone -b v2.6.0 https://github.com/tensorflow/tensorflow.git tensorflow_src
-          yum update -y || true
-          yum install -y wget bzip2-devel libffi-devel
-          wget https://www.python.org/ftp/python/3.8.6/Python-3.8.6.tgz
-          tar -zxvf Python-3.8.6.tgz
-          cd Python-3.8.6
-          ./configure --enable-optimizations
-          make && make install
-          cd ..
-          wget https://github.com/bazelbuild/bazelisk/releases/download/v1.7.4/bazelisk-linux-amd64
-          chmod u+x bazelisk-linux-amd64
-          mv bazelisk-linux-amd64 /usr/local/bin/bazel
-          pip3 install -U --user pip six numpy wheel setuptools mock 'future>=0.17.1'
-          pip3 install -U --user keras_applications --no-deps
-          pip3 install -U --user keras_preprocessing --no-deps
-          cd tensorflow_src
-          PYTHON_BIN_PATH=/usr/local/bin/python3 USE_DEFAULT_PYTHON_LIB_PATH=1 TF_NEED_CUDA=0 TF_NEED_ROCM=0 TF_DOWNLOAD_CLANG=0 TF_NEED_MPI=0 CC_OPT_FLAGS="-march=native -Wno-sign-compare" TF_SET_ANDROID_WORKSPACE=0 ./configure
-          BAZEL_LINKLIBS=-l%:libstdc++.a bazel build -c opt --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" //tensorflow:libtensorflow.so
-          BAZEL_LINKLIBS=-l%:libstdc++.a bazel build -c opt --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" //tensorflow/lite/c:libtensorflowlite_c.so
-          cd ..
-          cp tensorflow_src/bazel-bin/tensorflow/lite/c/libtensorflowlite_c.so libtensorflowlite_c.so
-          tar -zcvf tflite.tar.gz libtensorflowlite_c.so
-          cp tensorflow_src/bazel-bin/tensorflow/libtensorflow.so.2.6.0 libtensorflow.so.2.6.0
-          cp tensorflow_src/bazel-bin/tensorflow/libtensorflow_framework.so.2.6.0 libtensorflow_framework.so.2.6.0
-          tar -zcvf tf.tar.gz libtensorflow.so.2.6.0 libtensorflow_framework.so.2.6.0
+          curl -sL https://github.com/second-state/WasmEdge-tensorflow-deps/releases/download/0.9.0/WasmEdge-tensorflow-deps-TF-0.9.0-manylinux2014_x86_64.tar.gz -o tf.tar.gz
+          curl -sL https://github.com/second-state/WasmEdge-tensorflow-deps/releases/download/0.9.0/WasmEdge-tensorflow-deps-TFLite-0.9.0-manylinux2014_x86_64.tar.gz -o tflite.tar.gz
       - name: Upload manylinux2014_x86_64 TF tar.gz package
         uses: actions/upload-release-asset@v1
         env:
@@ -85,4 +88,77 @@ jobs:
           upload_url: ${{ needs.create.outputs.upload_url }}
           asset_path: tflite.tar.gz
           asset_name: WasmEdge-tensorflow-deps-TFLite-${{ needs.create.outputs.version }}-manylinux2014_x86_64.tar.gz
+          asset_content_type: application/x-gzip
+
+  build_and_upload_manylinux2014_aarch64:
+    name: Build and upload libtensorflow_c.so on manylinux2014_aarch64 platform
+    needs: create
+    runs-on: ubuntu-latest
+    container:
+      image: wasmedge/wasmedge:latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Build manylinux2014_aarch64 package
+          # ### Due to the architecture difference of docker and host, we don't build on CI.
+          # git clone -b v2.6.0 https://github.com/tensorflow/tensorflow.git tensorflow_src
+          # mkdir -p build
+          # cd build
+          # cmake -DCMAKE_BUILD_TYPE=Release ../tensorflow_src/tensorflow/lite/c
+          # ./release.sh
+          # make -j4
+          # cd ..
+          # cp build/libtensorflowlite_c.so libtensorflowlite_c.so
+          # tar -zcvf tflite.tar.gz libtensorflowlite_c.so
+        run: |
+          curl -sL https://github.com/second-state/WasmEdge-tensorflow-deps/releases/download/0.9.0/WasmEdge-tensorflow-deps-TFLite-0.9.0-manylinux2014_aarch64.tar.gz -o tflite.tar.gz
+      - name: Upload manylinux2014_aarch64 TFLite tar.gz package
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create.outputs.upload_url }}
+          asset_path: tflite.tar.gz
+          asset_name: WasmEdge-tensorflow-deps-TFLite-${{ needs.create.outputs.version }}-manylinux2014_aarch64.tar.gz
+          asset_content_type: application/x-gzip
+
+  build_and_upload_android_aarch64:
+    name: Build and upload libtensorflow_c.so on android_aarch64 platform
+    needs: create
+    runs-on: ubuntu-latest
+    container:
+      image: wasmedge/wasmedge:latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Build android_aarch64 package
+        run: |
+          git clone -b v2.6.0 https://github.com/tensorflow/tensorflow.git tensorflow_src
+          apt update && apt install -y unzip openjdk-8-jdk pip
+          curl -sLO https://github.com/bazelbuild/bazel/releases/download/3.7.2/bazel-3.7.2-installer-linux-x86_64.sh
+          chmod u+x bazel-3.7.2-installer-linux-x86_64.sh
+          ./bazel-3.7.2-installer-linux-x86_64.sh
+          curl -sLO https://dl.google.com/android/repository/commandlinetools-linux-8092744_latest.zip
+          unzip -q commandlinetools-linux-8092744_latest.zip
+          export ANDROID_SDK_HOME=$(pwd)/android-sdk
+          yes | ./cmdline-tools/bin/sdkmanager --sdk_root=$ANDROID_SDK_HOME --licenses
+          ./cmdline-tools/bin/sdkmanager "platform-tools" "platforms;android-23" --sdk_root=$ANDROID_SDK_HOME
+          ./cmdline-tools/bin/sdkmanager "build-tools;30.0.0" --sdk_root=$ANDROID_SDK_HOME
+          ./cmdline-tools/bin/sdkmanager "ndk;21.4.7075529" --sdk_root=$ANDROID_SDK_HOME
+          ln -s /usr/bin/python3 /usr/bin/python
+          pip3 install -U --user numpy
+          cd tensorflow_src
+          PYTHON_BIN_PATH=/usr/bin/python3 USE_DEFAULT_PYTHON_LIB_PATH=1 TF_NEED_CUDA=0 TF_NEED_ROCM=0 TF_DOWNLOAD_CLANG=0 TF_NEED_MPI=0 CC_OPT_FLAGS="-march=native -Wno-sign-compare" TF_SET_ANDROID_WORKSPACE=1 ANDROID_NDK_HOME=$ANDROID_SDK_HOME/ndk/21.4.7075529 ANDROID_NDK_API_LEVEL=23 ANDROID_API_LEVEL=23 ANDROID_BUILD_TOOLS_VERSION="30.0.0" ./configure
+          bazel build --cxxopt=-std=c++1z --config=android --cpu=arm64-v8a --fat_apk_cpu=arm64-v8a --crosstool_top=//external:android/crosstool --host_crosstool_top=@bazel_tools//tools/cpp:toolchain //tensorflow/lite/c:tensorflowlite_c --verbose_failures --copt=-w
+          cd ..
+          cp tensorflow_src/bazel-bin/tensorflow/lite/c/libtensorflowlite_c.so libtensorflowlite_c.so
+          tar -zcvf tflite.tar.gz libtensorflowlite_c.so
+      - name: Upload android_aarch64 TFLite tar.gz package
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create.outputs.upload_url }}
+          asset_path: tflite.tar.gz
+          asset_name: WasmEdge-tensorflow-deps-TFLite-${{ needs.create.outputs.version }}-android_aarch64.tar.gz
           asset_content_type: application/x-gzip

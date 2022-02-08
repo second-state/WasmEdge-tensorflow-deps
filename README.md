@@ -16,112 +16,178 @@ This project is under the Apache-2.0 License as the same as the TensorFlow proje
 
 - [TensorFlow](https://github.com/tensorflow/tensorflow)
 
-## How to build on the legacy operating system - CentOS 7.6.1810
+## How to build on the legacy operating system - CentOS 7.6.1810 x86_64
 
 ### Clone the TensorFlow source
 
 ```bash
-$ git clone https://github.com/tensorflow/tensorflow.git tensorflow_src
-$ cd tensorflow_src
-$ git checkout v2.6.0
+git clone https://github.com/tensorflow/tensorflow.git tensorflow_src
+cd tensorflow_src
+git checkout v2.6.0
 ```
 
-### Pull the CentOS docker image and run
+### Pull the CentOS 7.6.1810 x86_64 docker image and run
 
 ```bash
-$ docker pull centos:7.6.1810
-$ docker run -it --rm -v $(pwd):/root/$(basename $(pwd)) centos:7.6.1810
+docker pull centos:7.6.1810
+docker run -it --rm -v $(pwd):/root/$(basename $(pwd)) centos:7.6.1810
 ```
 
-### Update and install GCC-7.3.1
+### Update and install GCC-7.3.1 on CentOS 7.6.1810 x86_64
 
 ```bash
-(docker) $ yum update
-(docker) $ yum install -y centos-release-scl
-(docker) $ yum install -y devtoolset-7-gcc*
-(docker) $ scl enable devtoolset-7 bash
+# In docker
+yum update -y
+yum install -y centos-release-scl
+yum install -y devtoolset-7-gcc*
+scl enable devtoolset-7 bash
 ```
 
 The gcc installation path will be at `/opt/rh/devtoolset-7/root/usr/bin/`,
 and the gcc version can be checked with the command `gcc -v`.
 
-### Build and install Python 3.8.6
+### Build and install Python 3.8.6 on CentOS 7.6.1810 x86_64
 
 ```bash
-(docker) $ cd /root
-(docker) $ yum install -y wget make openssl-devel bzip2-devel libffi-devel
-(docker) $ wget https://www.python.org/ftp/python/3.8.6/Python-3.8.6.tgz
-(docker) $ tar -zxvf Python-3.8.6.tgz
-(docker) $ cd Python-3.8.6
-(docker) $ CXX=/opt/rh/devtoolset-7/root/usr/bin/g++ ./configure --enable-optimizations
-(docker) $ make && make install
+# In docker
+cd /root
+yum install -y wget make openssl-devel bzip2-devel libffi-devel
+curl -sLO https://www.python.org/ftp/python/3.8.6/Python-3.8.6.tgz
+tar -zxf Python-3.8.6.tgz
+cd Python-3.8.6
+CXX=/opt/rh/devtoolset-7/root/usr/bin/g++ ./configure --enable-optimizations
+make && make install
 ```
 
 The python installation path will be at `/usr/local/bin/python3.8`,
 and the version can be checked with the command `python3.8 --version`.
 
-### Install Bazelisk 1.7.4
+### Install Bazelisk 1.7.4 on CentOS 7.6.1810 x86_64
 
 ```bash
-(docker) $ cd /root
-(docker) $ wget https://github.com/bazelbuild/bazelisk/releases/download/v1.7.4/bazelisk-linux-amd64
-(docker) $ chmod u+x bazelisk-linux-amd64
-(docker) $ mv bazelisk-linux-amd64 /usr/local/bin/bazel
+# In docker
+cd /root
+curl -sLO https://github.com/bazelbuild/bazelisk/releases/download/v1.7.4/bazelisk-linux-amd64
+chmod u+x bazelisk-linux-amd64
+mv bazelisk-linux-amd64 /usr/local/bin/bazel
 ```
 
-### Install the Python packages which are required by the TensorFlow project
+### Install the Python packages which are required by the TensorFlow project on CentOS 7.6.1810 x86_64
 
 ```bash
-(docker) $ pip3 install -U --user pip six numpy wheel setuptools mock 'future>=0.17.1'
-(docker) $ pip3 install -U --user keras_applications --no-deps
-(docker) $ pip3 install -U --user keras_preprocessing --no-deps
+# In docker
+pip3 install -U --user pip six numpy wheel setuptools mock 'future>=0.17.1'
+pip3 install -U --user keras_applications --no-deps
+pip3 install -U --user keras_preprocessing --no-deps
 ```
 
-### Build the TensorFlow shared library
+### Build the TensorFlow and TensorFlow-lite shared library on CentOS 7.6.1810 x86_64
 
 ```bash
-(docker) $ yum install -y git which
-(docker) $ cd /root/tensorflow_src
-(docker) $ ./configure
-(docker) $ BAZEL_LINKLIBS=-l%:libstdc++.a bazel build -c opt --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" //tensorflow:libtensorflow.so
-(docker) $ BAZEL_LINKLIBS=-l%:libstdc++.a bazel build -c opt --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" //tensorflow/lite/c:libtensorflowlite_c.so
+# In docker
+yum install -y git which
+cd /root/tensorflow_src
+PYTHON_BIN_PATH=/usr/local/bin/python3.8 USE_DEFAULT_PYTHON_LIB_PATH=1 TF_NEED_CUDA=0 TF_NEED_ROCM=0 TF_DOWNLOAD_CLANG=0 TF_NEED_MPI=0 CC_OPT_FLAGS="-march=native -Wno-sign-compare" TF_SET_ANDROID_WORKSPACE=0 ./configure
+BAZEL_LINKLIBS=-l%:libstdc++.a bazel build -c opt --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" //tensorflow:libtensorflow.so
+BAZEL_LINKLIBS=-l%:libstdc++.a bazel build -c opt --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" //tensorflow/lite/c:libtensorflowlite_c.so
 ```
 
 The TensorFlow shared library will be at `bazel-bin/tensorflow/libtensorflow.so.2.6.0`, `bazel-bin/tensorflow/libtensorflow_framework.so.2.6.0`, and `bazel-bin/tensorflow/lite/c/libtensorflowlite_c.so`.
 
-### Minimum requirements of our pre-built shared libraries
+## How to build TensorFlow-Lite shared library for manylinux2014_aarch64
 
-| Pre-built shared library          | GLIBC          | GLIBCXX       | CXXABI          |
-| --------------------------        | -------------- | ------------- | --------------- |
-| libtensorflow.so.2.6.0            | 2.17           | 3.4.19        | 1.3.7           |
-| libtensorflow\_framework.so.2.6.0 | 2.16           | 3.4.19        | 1.3.7           |
-| libtensorflowlite\_c.so           | 2.14           | 3.4.19        | 1.3.5           |
+### [Clone the TensorFlow source](###clone-the-tensorflow-source)
+
+### Pull the WasmEdge manylinux2014_aarch64 docker image and run
+
+```bash
+docker pull wasmedge/wasmedge:manylinux2014_aarch64
+docker run -it --rm -v $(pwd):/root/$(basename $(pwd)) wasmedge/wasmedge:manylinux2014_aarch64
+```
+
+### Build the TensorFlow-Lite shared library for manylinux2014_aarch64 with cmake
+
+```bash
+# In docker
+mkdir -p /root/build
+cd /root/build
+cmake -DCMAKE_BUILD_TYPE=Release /root/tensorflow_src/tensorflow/lite/c
+./release.sh
+make
+```
+
+The TensorFlow-Lite shared library for aarch64 will be at `./libtensorflowlite_c.so`.
 
 ## How to build TensorFlow-Lite shared library for Android platforms
 
-### Clone the TensorFlow source
+### [Clone the TensorFlow source on host system](###clone-the-tensorflow-source)
+
+### Pull the WasmEdge:latest (based on Ubuntu 20.04) docker image and run
 
 ```bash
-$ git clone https://github.com/tensorflow/tensorflow.git tensorflow_src
-$ cd tensorflow_src
-$ git checkout v2.6.0
+docker pull wasmedge/wasmedge:latest
+docker run -it --rm -v $(pwd):/root/$(basename $(pwd)) wasmedge/wasmedge:latest
 ```
 
-### Pull the WasmEdge docker image and run
+### Install Bazel 3.7.2 on Ubuntu 20.04
 
 ```bash
-$ docker pull wasmedge/wasmedge:latest
-$ docker run -it --rm -v $(pwd):/root/$(basename $(pwd)) wasmedge/wasmedge:latest
+# In docker
+apt update && apt install -y unzip
+cd /root
+curl -sLO https://github.com/bazelbuild/bazel/releases/download/3.7.2/bazel-3.7.2-installer-linux-x86_64.sh
+chmod u+x bazel-3.7.2-installer-linux-x86_64.sh
+./bazel-3.7.2-installer-linux-x86_64.sh
 ```
 
-### Install Bazel 5.0.0
+### Download and extract the Android command line tools on Ubuntu 20.04
 
 ```bash
-(docker) $ apt update && apt install -y unzip
-(docker) $ cd /root
-(docker) $ wget https://github.com/bazelbuild/bazel/releases/download/5.0.0/bazel-5.0.0-installer-linux-x86_64.sh
-(docker) $ chmod u+x bazel-5.0.0-installer-linux-x86_64.sh
-(docker) $ ./bazel-5.0.0-installer-linux-x86_64.sh
+# In docker
+cd /root
+curl -sLO https://dl.google.com/android/repository/commandlinetools-linux-8092744_latest.zip
+unzip -q commandlinetools-linux-8092744_latest.zip
 ```
 
-Work in progress. We will push the steps soon.
+### Install the Android SDK and NDK through the sdkmanager on Ubuntu 20.04
+
+```bash
+# In docker
+apt update && apt install -y openjdk-8-jdk
+cd /root
+export ANDROID_SDK_HOME=/root/android-sdk
+yes | ./cmdline-tools/bin/sdkmanager --sdk_root=$ANDROID_SDK_HOME --licenses
+./cmdline-tools/bin/sdkmanager "platform-tools" "platforms;android-23" --sdk_root=$ANDROID_SDK_HOME
+./cmdline-tools/bin/sdkmanager "build-tools;30.0.0" --sdk_root=$ANDROID_SDK_HOME
+./cmdline-tools/bin/sdkmanager "ndk;21.4.7075529" --sdk_root=$ANDROID_SDK_HOME
+```
+
+### Install the numpy on Ubuntu 20.04
+
+```bash
+# In docker
+apt update && apt install -y pip
+ln -s /usr/bin/python3 /usr/bin/python
+pip3 install -U --user numpy
+```
+
+### Build the TensorFlow-lite shared library for Android
+
+```bash
+# In docker
+cd /root/tensorflow_src
+PYTHON_BIN_PATH=/usr/bin/python3 USE_DEFAULT_PYTHON_LIB_PATH=1 TF_NEED_CUDA=0 TF_NEED_ROCM=0 TF_DOWNLOAD_CLANG=0 TF_NEED_MPI=0 CC_OPT_FLAGS="-march=native -Wno-sign-compare" TF_SET_ANDROID_WORKSPACE=1 ANDROID_NDK_HOME=$ANDROID_SDK_HOME/ndk/21.4.7075529 ANDROID_NDK_API_LEVEL=23 ANDROID_API_LEVEL=23 ANDROID_BUILD_TOOLS_VERSION="30.0.0" ./configure
+bazel build --cxxopt=-std=c++1z --config=android --cpu=arm64-v8a --fat_apk_cpu=arm64-v8a --crosstool_top=//external:android/crosstool --host_crosstool_top=@bazel_tools//tools/cpp:toolchain //tensorflow/lite/c:tensorflowlite_c --verbose_failures --copt=-w
+```
+
+The TensorFlow-Lite shared library for Android will be at `bazel-bin/tensorflow/lite/c/libtensorflowlite_c.so`.
+
+## Minimum requirements of our pre-built shared libraries
+
+| Pre-built shared library                                  | GLIBC | GLIBCXX | CXXABI |
+| --------------------------------------------------------- | ----- | ------- | ------ |
+| libtensorflow.so.2.6.0 for manylinux2014_x86_64           | 2.17  | 3.4.19  | 1.3.7  |
+| libtensorflow_framework.so.2.6.0 for manylinux2014_x86_64 | 2.16  | 3.4.19  | 1.3.7  |
+| libtensorflowlite_c.so for manylinux2014_x86_64           | 2.14  | 3.4.19  | 1.3.5  |
+| libtensorflowlite_c.so for manylinux2014_aarch64          | 2.17  | None    | None   |
+| libtensorflowlite_c.so for android_aarch64                | None  | None    | None   |
