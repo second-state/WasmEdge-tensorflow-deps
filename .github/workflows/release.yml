@@ -32,6 +32,7 @@ jobs:
           body_path: .CurrentChangelog.md
           draft: true
           prerelease: true
+
   build_and_upload_manylinux2014_x86_64:
     name: Build and upload libtensorflow.so and libtensorflow_c.so on manylinux2014_x86_64 platform
     needs: create
@@ -120,6 +121,56 @@ jobs:
           upload_url: ${{ needs.create.outputs.upload_url }}
           asset_path: tflite.tar.gz
           asset_name: WasmEdge-tensorflow-deps-TFLite-${{ needs.create.outputs.version }}-manylinux2014_aarch64.tar.gz
+          asset_content_type: application/x-gzip
+
+  build_and_upload_darwin_x86_64:
+    name: Build and upload libtensorflow.dylib and libtensorflowlite_c.dylib on darwin_x86_64 platform
+    needs: create
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Build darwin_x86_64 package
+          # ### Due to the limitation, we don't build on CI.
+          # brew install python
+          # pip3 install -U --user pip numpy wheel
+          # pip3 install -U --user keras_preprocessing --no-deps
+          # git clone -b v2.6.0 https://github.com/tensorflow/tensorflow.git tensorflow_src
+          # wget https://github.com/bazelbuild/bazelisk/releases/download/v1.11.0/bazelisk-darwin-amd64
+          # chmod u+x bazelisk-darwin-amd64
+          # mv bazelisk-darwin-amd64 /usr/local/bin
+          # cd tensorflow_src
+          # export CC=clang
+          # export CXX=clang++
+          # PYTHON_BIN_PATH=/usr/local/opt/python@3.9/bin/python3.9 USE_DEFAULT_PYTHON_LIB_PATH=1 TF_NEED_CUDA=0 TF_NEED_ROCM=0 TF_DOWNLOAD_CLANG=0 TF_NEED_MPI=0 CC_OPT_FLAGS="-march=native -Wno-sign-compare" TF_SET_ANDROID_WORKSPACE=0 TF_CONFIGURE_IOS=0 ./configure
+          # bazel build -c opt //tensorflow:libtensorflow.dylib
+          # bazel build -c opt //tensorflow/lite/c:libtensorflowlite_c.dylib
+          # cd ..
+          # cp tensorflow_src/bazel-bin/tensorflow/lite/c/libtensorflowlite_c.dylib libtensorflowlite_c.dylib
+          # tar -zcvf tflite.tar.gz libtensorflowlite_c.dylib
+          # cp tensorflow_src/bazel-bin/tensorflow/libtensorflow.2.6.0.dylib libtensorflow.2.6.0.dylib
+          # cp tensorflow_src/bazel-bin/tensorflow/libtensorflow_framework.2.6.0.dylib libtensorflow_framework.2.6.0.dylib
+          # tar -zcvf tf.tar.gz libtensorflow.2.6.0.dylib libtensorflow_framework.2.6.0.dylib
+        run: |
+          curl -sL https://github.com/second-state/WasmEdge-tensorflow-deps/releases/download/0.9.1/WasmEdge-tensorflow-deps-TF-0.9.1-darwin_x86_64.tar.gz -o tf.tar.gz
+          curl -sL https://github.com/second-state/WasmEdge-tensorflow-deps/releases/download/0.9.1/WasmEdge-tensorflow-deps-TFLite-0.9.1-darwin_x86_64.tar.gz -o tflite.tar.gz
+      - name: Upload darwin_x86_64 TF tar.gz package
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create.outputs.upload_url }}
+          asset_path: tf.tar.gz
+          asset_name: WasmEdge-tensorflow-deps-TF-${{ needs.create.outputs.version }}-darwin_x86_64.tar.gz
+          asset_content_type: application/x-gzip
+      - name: Upload darwin_x86_64 TFLite tar.gz package
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create.outputs.upload_url }}
+          asset_path: tflite.tar.gz
+          asset_name: WasmEdge-tensorflow-deps-TFLite-${{ needs.create.outputs.version }}-darwin_x86_64.tar.gz
           asset_content_type: application/x-gzip
 
   build_and_upload_android_aarch64:
