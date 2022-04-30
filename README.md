@@ -96,7 +96,7 @@ The TensorFlow shared library will be at `bazel-bin/tensorflow/libtensorflow.so.
 
 ## How to build TensorFlow-Lite shared library for manylinux2014_aarch64
 
-### [Clone the TensorFlow source](###clone-the-tensorflow-source)
+### [Clone the TensorFlow source](#clone-the-tensorflow-source)
 
 ### Pull the WasmEdge manylinux2014_aarch64 docker image and run
 
@@ -120,7 +120,7 @@ The TensorFlow-Lite shared library for aarch64 will be at `./libtensorflowlite_c
 
 ## How to build on the MacOS systems - MacOS 10.15 x86_64
 
-### [Clone the TensorFlow source](###clone-the-tensorflow-source)
+### [Clone the TensorFlow source on MacOS](#clone-the-tensorflow-source)
 
 ### [Install Homebrew](https://brew.sh/)
 
@@ -160,7 +160,7 @@ The TensorFlow shared library will be at `bazel-bin/tensorflow/libtensorflow.2.6
 
 ## How to build TensorFlow-Lite shared library for Android platforms
 
-### [Clone the TensorFlow source on host system](###clone-the-tensorflow-source)
+### [Clone the TensorFlow source on host system](#clone-the-tensorflow-source)
 
 ### Pull the WasmEdge:latest (based on Ubuntu 20.04) docker image and run
 
@@ -233,6 +233,7 @@ The TensorFlow-Lite shared library for Android will be at `bazel-bin/tensorflow/
 | libtensorflowlite_c.so for android_aarch64                | None  | None    | None   |
 
 | Pre-built shared library                                  | Minimum MacOS version |
+| --------------------------------------------------------- | --------------------- |
 | libtensorflow.2.6.0.dylib for darwin_x86_64               |          10.15        |
 | libtensorflow_framework.2.6.0.dylib for darwin_x86_64     |          10.15        |
 | libtensorflowlite_c.2.6.0.dylib for darwin_x86_64         |          10.15        |
