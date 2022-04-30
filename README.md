@@ -1,6 +1,6 @@
 # WasmEdge-Tensorflow Dependencies
 
-This repository provides pre-built dependencies for the [WasmEdge with TensorFlow extension project](https://github.com/second-state/WasmEdge-tensorflow) (formerly `SSVM`).
+This repository provides pre-built dependencies for the [WasmEdge with TensorFlow extension project](https://github.com/second-state/WasmEdge-tensorflow).
 
 ## Motivation
 
@@ -118,6 +118,46 @@ make
 
 The TensorFlow-Lite shared library for aarch64 will be at `./libtensorflowlite_c.so`.
 
+## How to build on the MacOS systems - MacOS 10.15 x86_64
+
+### [Clone the TensorFlow source](###clone-the-tensorflow-source)
+
+### [Install Homebrew](https://brew.sh/)
+
+Install python with brew:
+
+```bash
+brew install python
+```
+
+### Install the Python packages which are required by the TensorFlow project on MacOS x86_64
+
+```bash
+pip3 install -U --user pip numpy wheel
+pip3 install -U --user keras_preprocessing --no-deps
+```
+
+### Install Bazelisk 1.11.0 on MacOS 10.15 x86_64
+
+```bash
+curl -sLO https://github.com/bazelbuild/bazelisk/releases/download/v1.11.0/bazelisk-darwin-amd64
+chmod u+x bazelisk-darwin-amd64
+mv bazelisk-darwin-amd64 /usr/local/bin/bazel
+```
+
+### Build the TensorFlow and TensorFlow-lite shared library on MacOS 10.15 x86_64
+
+```bash
+# In the tensorflow source directory
+export CC=clang
+export CXX=clang++
+PYTHON_BIN_PATH=/usr/local/opt/python@3.9/bin/python3.9 USE_DEFAULT_PYTHON_LIB_PATH=1 TF_NEED_CUDA=0 TF_NEED_ROCM=0 TF_DOWNLOAD_CLANG=0 TF_NEED_MPI=0 CC_OPT_FLAGS="-march=native -Wno-sign-compare" TF_SET_ANDROID_WORKSPACE=0 TF_CONFIGURE_IOS=0 ./configure
+bazel build -c opt //tensorflow:libtensorflow.dylib
+bazel build -c opt //tensorflow/lite/c:libtensorflowlite_c.dylib
+```
+
+The TensorFlow shared library will be at `bazel-bin/tensorflow/libtensorflow.2.6.0.dylib`, `bazel-bin/tensorflow/libtensorflow_framework.2.6.0.dylib`, and `bazel-bin/tensorflow/lite/c/libtensorflowlite_c.dylib`.
+
 ## How to build TensorFlow-Lite shared library for Android platforms
 
 ### [Clone the TensorFlow source on host system](###clone-the-tensorflow-source)
@@ -191,3 +231,8 @@ The TensorFlow-Lite shared library for Android will be at `bazel-bin/tensorflow/
 | libtensorflowlite_c.so for manylinux2014_x86_64           | 2.14  | 3.4.19  | 1.3.5  |
 | libtensorflowlite_c.so for manylinux2014_aarch64          | 2.17  | None    | None   |
 | libtensorflowlite_c.so for android_aarch64                | None  | None    | None   |
+
+| Pre-built shared library                                  | Minimum MacOS version |
+| libtensorflow.2.6.0.dylib for darwin_x86_64               |          10.15        |
+| libtensorflow_framework.2.6.0.dylib for darwin_x86_64     |          10.15        |
+| libtensorflowlite_c.2.6.0.dylib for darwin_x86_64         |          10.15        |
