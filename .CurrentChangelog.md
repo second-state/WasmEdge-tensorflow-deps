@@ -1,4 +1,4 @@
-### 0.10.0-alpha.2 (2022-05-20)
+### 0.10.0-rc.1 (2022-05-24)
 
 This release is the pre-built shared libraries for [WasmEdge-tensorflow](https://github.com/second-state/WasmEdge-tensorflow) on `manylinux2014`, `android`, and `darwin_x86_64`.
 
