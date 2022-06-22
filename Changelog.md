@@ -1,3 +1,7 @@
+### 0.10.1-alpha.1 (2022-06-22)
+
+This release is the pre-built shared libraries for [WasmEdge-tensorflow](https://github.com/second-state/WasmEdge-tensorflow) on `manylinux2014_x86_64`, `manylinux2014_aarch64`, `android`, and `darwin_x86_64`.
+
 ### 0.10.0 (2022-05-24)
 
 This release is the pre-built shared libraries for [WasmEdge-tensorflow](https://github.com/second-state/WasmEdge-tensorflow) on `manylinux2014`, `android`, and `darwin_x86_64`.
