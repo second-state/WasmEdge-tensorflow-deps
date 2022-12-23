@@ -88,7 +88,7 @@ pip3 install -U --user keras_preprocessing --no-deps
 yum install -y git which
 cd /root/tensorflow_src
 PYTHON_BIN_PATH=/usr/local/bin/python3.8 USE_DEFAULT_PYTHON_LIB_PATH=1 TF_NEED_CUDA=0 TF_NEED_ROCM=0 TF_DOWNLOAD_CLANG=0 TF_NEED_MPI=0 CC_OPT_FLAGS="-march=native -Wno-sign-compare" TF_SET_ANDROID_WORKSPACE=0 ./configure
-BAZEL_LINKLIBS=-l%:libstdc++.a bazel build -c opt --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" //tensorflow:libtensorflow.so
+BAZEL_LINKLIBS=-l%:libstdc++.a bazel build -c opt --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" //tensorflow:libtensorflow_cc.so
 BAZEL_LINKLIBS=-l%:libstdc++.a bazel build -c opt --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" //tensorflow/lite/c:libtensorflowlite_c.so
 ```
 
@@ -152,7 +152,7 @@ mv bazelisk-darwin-amd64 /usr/local/bin/bazel
 export CC=clang
 export CXX=clang++
 PYTHON_BIN_PATH=/usr/local/opt/python@3.9/bin/python3.9 USE_DEFAULT_PYTHON_LIB_PATH=1 TF_NEED_CUDA=0 TF_NEED_ROCM=0 TF_DOWNLOAD_CLANG=0 TF_NEED_MPI=0 CC_OPT_FLAGS="-march=native -Wno-sign-compare" TF_SET_ANDROID_WORKSPACE=0 TF_CONFIGURE_IOS=0 ./configure
-bazel build -c opt //tensorflow:libtensorflow.dylib
+bazel build -c opt //tensorflow:libtensorflow_cc.dylib
 bazel build -c opt //tensorflow/lite/c:libtensorflowlite_c.dylib
 ```
 
@@ -226,7 +226,7 @@ The TensorFlow-Lite shared library for Android will be at `bazel-bin/tensorflow/
 
 | Pre-built shared library                                  | GLIBC | GLIBCXX | CXXABI |
 | --------------------------------------------------------- | ----- | ------- | ------ |
-| libtensorflow.so.2.6.0 for manylinux2014_x86_64           | 2.17  | 3.4.19  | 1.3.7  |
+| libtensorflow_cc.so.2.6.0 for manylinux2014_x86_64        | 2.17  | 3.4.19  | 1.3.7  |
 | libtensorflow_framework.so.2.6.0 for manylinux2014_x86_64 | 2.16  | 3.4.19  | 1.3.7  |
 | libtensorflowlite_c.so for manylinux2014_x86_64           | 2.14  | 3.4.19  | 1.3.5  |
 | libtensorflowlite_c.so for manylinux2014_aarch64          | 2.17  | None    | None   |
@@ -234,6 +234,6 @@ The TensorFlow-Lite shared library for Android will be at `bazel-bin/tensorflow/
 
 | Pre-built shared library                                  | Minimum MacOS version |
 | --------------------------------------------------------- | --------------------- |
-| libtensorflow.2.6.0.dylib for darwin_x86_64               |          10.15        |
+| libtensorflow_cc.2.6.0.dylib for darwin_x86_64            |          10.15        |
 | libtensorflow_framework.2.6.0.dylib for darwin_x86_64     |          10.15        |
 | libtensorflowlite_c.2.6.0.dylib for darwin_x86_64         |          10.15        |

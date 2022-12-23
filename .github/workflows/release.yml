@@ -35,7 +35,7 @@ jobs:
           prerelease: true
 
   build_and_upload_manylinux2014_x86_64:
-    name: Build and upload libtensorflow.so and libtensorflow_c.so on manylinux2014_x86_64 platform
+    name: Build and upload libtensorflow_cc.so and libtensorflow_c.so on manylinux2014_x86_64 platform
     needs: create
     runs-on: ubuntu-latest
     container:
@@ -62,14 +62,14 @@ jobs:
           # pip3 install -U --user keras_preprocessing --no-deps
           # cd tensorflow_src
           # PYTHON_BIN_PATH=/usr/local/bin/python3 USE_DEFAULT_PYTHON_LIB_PATH=1 TF_NEED_CUDA=0 TF_NEED_ROCM=0 TF_DOWNLOAD_CLANG=0 TF_NEED_MPI=0 CC_OPT_FLAGS="-march=native -Wno-sign-compare" TF_SET_ANDROID_WORKSPACE=0 ./configure
-          # BAZEL_LINKLIBS=-l%:libstdc++.a bazel build -c opt --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" //tensorflow:libtensorflow.so
+          # BAZEL_LINKLIBS=-l%:libstdc++.a bazel build -c opt --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" //tensorflow:libtensorflow_cc.so
           # BAZEL_LINKLIBS=-l%:libstdc++.a bazel build -c opt --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" //tensorflow/lite/c:libtensorflowlite_c.so
           # cd ..
           # cp tensorflow_src/bazel-bin/tensorflow/lite/c/libtensorflowlite_c.so libtensorflowlite_c.so
           # tar -zcvf tflite.tar.gz libtensorflowlite_c.so
-          # cp tensorflow_src/bazel-bin/tensorflow/libtensorflow.so.2.6.0 libtensorflow.so.2.6.0
+          # cp tensorflow_src/bazel-bin/tensorflow/libtensorflow_cc.so.2.6.0 libtensorflow_cc.so.2.6.0
           # cp tensorflow_src/bazel-bin/tensorflow/libtensorflow_framework.so.2.6.0 libtensorflow_framework.so.2.6.0
-          # tar -zcvf tf.tar.gz libtensorflow.so.2.6.0 libtensorflow_framework.so.2.6.0
+          # tar -zcvf tf.tar.gz libtensorflow_cc.so.2.6.0 libtensorflow_framework.so.2.6.0
         run: |
           curl -sL https://github.com/second-state/WasmEdge-tensorflow-deps/releases/download/0.9.0/WasmEdge-tensorflow-deps-TF-0.9.0-manylinux2014_x86_64.tar.gz -o tf.tar.gz
           curl -sL https://github.com/second-state/WasmEdge-tensorflow-deps/releases/download/0.9.0/WasmEdge-tensorflow-deps-TFLite-0.9.0-manylinux2014_x86_64.tar.gz -o tflite.tar.gz
@@ -125,7 +125,7 @@ jobs:
           asset_content_type: application/x-gzip
 
   build_and_upload_darwin_x86_64:
-    name: Build and upload libtensorflow.dylib and libtensorflowlite_c.dylib on darwin_x86_64 platform
+    name: Build and upload libtensorflow_cc.dylib and libtensorflowlite_c.dylib on darwin_x86_64 platform
     needs: create
     runs-on: macos-latest
     steps:
@@ -143,15 +143,15 @@ jobs:
           # cd tensorflow_src
           # export CC=clang
           # export CXX=clang++
-          # PYTHON_BIN_PATH=/usr/local/opt/python@3.9/bin/python3.9 USE_DEFAULT_PYTHON_LIB_PATH=1 TF_NEED_CUDA=0 TF_NEED_ROCM=0 TF_DOWNLOAD_CLANG=0 TF_NEED_MPI=0 CC_OPT_FLAGS="-march=native -Wno-sign-compare" TF_SET_ANDROID_WORKSPACE=0 TF_CONFIGURE_IOS=0 ./configure
-          # bazel build -c opt //tensorflow:libtensorflow.dylib
+          # PYTHON_BIN_PATH=/usr/local/opt/python@3.11/bin/python3.11 USE_DEFAULT_PYTHON_LIB_PATH=1 TF_NEED_CUDA=0 TF_NEED_ROCM=0 TF_DOWNLOAD_CLANG=0 TF_NEED_MPI=0 CC_OPT_FLAGS="-march=native -Wno-sign-compare" TF_SET_ANDROID_WORKSPACE=0 TF_CONFIGURE_IOS=0 ./configure
+          # bazel build -c opt //tensorflow:libtensorflow_cc.dylib
           # bazel build -c opt //tensorflow/lite/c:libtensorflowlite_c.dylib
           # cd ..
           # cp tensorflow_src/bazel-bin/tensorflow/lite/c/libtensorflowlite_c.dylib libtensorflowlite_c.dylib
           # tar -zcvf tflite.tar.gz libtensorflowlite_c.dylib
-          # cp tensorflow_src/bazel-bin/tensorflow/libtensorflow.2.6.0.dylib libtensorflow.2.6.0.dylib
+          # cp tensorflow_src/bazel-bin/tensorflow/libtensorflow_cc.2.6.0.dylib libtensorflow_cc.2.6.0.dylib
           # cp tensorflow_src/bazel-bin/tensorflow/libtensorflow_framework.2.6.0.dylib libtensorflow_framework.2.6.0.dylib
-          # tar -zcvf tf.tar.gz libtensorflow.2.6.0.dylib libtensorflow_framework.2.6.0.dylib
+          # tar -zcvf tf.tar.gz libtensorflow_cc.2.6.0.dylib libtensorflow_framework.2.6.0.dylib
         run: |
           curl -sL https://github.com/second-state/WasmEdge-tensorflow-deps/releases/download/0.9.1/WasmEdge-tensorflow-deps-TF-0.9.1-darwin_x86_64.tar.gz -o tf.tar.gz
           curl -sL https://github.com/second-state/WasmEdge-tensorflow-deps/releases/download/0.9.1/WasmEdge-tensorflow-deps-TFLite-0.9.1-darwin_x86_64.tar.gz -o tflite.tar.gz
