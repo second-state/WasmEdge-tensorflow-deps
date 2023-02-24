@@ -71,8 +71,8 @@ jobs:
           # cp tensorflow_src/bazel-bin/tensorflow/libtensorflow_framework.so.2.6.0 libtensorflow_framework.so.2.6.0
           # tar -zcvf tf.tar.gz libtensorflow_cc.so.2.6.0 libtensorflow_framework.so.2.6.0
         run: |
-          curl -sL https://github.com/second-state/WasmEdge-tensorflow-deps/releases/download/0.9.0/WasmEdge-tensorflow-deps-TF-0.9.0-manylinux2014_x86_64.tar.gz -o tf.tar.gz
-          curl -sL https://github.com/second-state/WasmEdge-tensorflow-deps/releases/download/0.9.0/WasmEdge-tensorflow-deps-TFLite-0.9.0-manylinux2014_x86_64.tar.gz -o tflite.tar.gz
+          curl -sL https://github.com/second-state/WasmEdge-tensorflow-deps/releases/download/0.12.0-alpha.1/WasmEdge-tensorflow-deps-TF-0.12.0-alpha.1-manylinux2014_x86_64.tar.gz -o tf.tar.gz
+          curl -sL https://github.com/second-state/WasmEdge-tensorflow-deps/releases/download/0.12.0-alpha.1/WasmEdge-tensorflow-deps-TFLite-0.12.0-alpha.1-manylinux2014_x86_64.tar.gz -o tflite.tar.gz
       - name: Upload manylinux2014_x86_64 TF tar.gz package
         uses: actions/upload-release-asset@v1
         env:
@@ -113,7 +113,7 @@ jobs:
           # cp build/libtensorflowlite_c.so libtensorflowlite_c.so
           # tar -zcvf tflite.tar.gz libtensorflowlite_c.so
         run: |
-          curl -sL https://github.com/second-state/WasmEdge-tensorflow-deps/releases/download/0.9.0/WasmEdge-tensorflow-deps-TFLite-0.9.0-manylinux2014_aarch64.tar.gz -o tflite.tar.gz
+          curl -sL https://github.com/second-state/WasmEdge-tensorflow-deps/releases/download/0.12.0-alpha.1/WasmEdge-tensorflow-deps-TFLite-0.12.0-alpha.1-manylinux2014_aarch64.tar.gz -o tflite.tar.gz
       - name: Upload manylinux2014_aarch64 TFLite tar.gz package
         uses: actions/upload-release-asset@v1
         env:
@@ -153,8 +153,8 @@ jobs:
           # cp tensorflow_src/bazel-bin/tensorflow/libtensorflow_framework.2.6.0.dylib libtensorflow_framework.2.6.0.dylib
           # tar -zcvf tf.tar.gz libtensorflow_cc.2.6.0.dylib libtensorflow_framework.2.6.0.dylib
         run: |
-          curl -sL https://github.com/second-state/WasmEdge-tensorflow-deps/releases/download/0.9.1/WasmEdge-tensorflow-deps-TF-0.9.1-darwin_x86_64.tar.gz -o tf.tar.gz
-          curl -sL https://github.com/second-state/WasmEdge-tensorflow-deps/releases/download/0.9.1/WasmEdge-tensorflow-deps-TFLite-0.9.1-darwin_x86_64.tar.gz -o tflite.tar.gz
+          curl -sL https://github.com/second-state/WasmEdge-tensorflow-deps/releases/download/0.12.0-alpha.1/WasmEdge-tensorflow-deps-TF-0.12.0-alpha.1-darwin_x86_64.tar.gz -o tf.tar.gz
+          curl -sL https://github.com/second-state/WasmEdge-tensorflow-deps/releases/download/0.12.0-alpha.1/WasmEdge-tensorflow-deps-TFLite-0.12.0-alpha.1-darwin_x86_64.tar.gz -o tflite.tar.gz
       - name: Upload darwin_x86_64 TF tar.gz package
         uses: actions/upload-release-asset@v1
         env:
@@ -206,7 +206,7 @@ jobs:
           # cp tensorflow_src/bazel-bin/tensorflow/lite/c/libtensorflowlite_c.so libtensorflowlite_c.so
           # tar -zcvf tflite.tar.gz libtensorflowlite_c.so
         run: |
-          curl -sL https://github.com/second-state/WasmEdge-tensorflow-deps/releases/download/0.9.0/WasmEdge-tensorflow-deps-TFLite-0.9.0-android_aarch64.tar.gz -o tflite.tar.gz
+          curl -sL https://github.com/second-state/WasmEdge-tensorflow-deps/releases/download/0.12.0-alpha.1/WasmEdge-tensorflow-deps-TFLite-0.12.0-alpha.1-android_aarch64.tar.gz -o tflite.tar.gz
       - name: Upload android_aarch64 TFLite tar.gz package
         uses: actions/upload-release-asset@v1
         env:
