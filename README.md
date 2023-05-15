@@ -16,63 +16,54 @@ This project is under the Apache-2.0 License as the same as the TensorFlow proje
 
 - [TensorFlow](https://github.com/tensorflow/tensorflow)
 
-## How to build on the legacy operating system - CentOS 7.6.1810 x86_64
+## How to build on the legacy operating system - CentOS 7.6.1810 x86_64 or aarch64
 
 ### Clone the TensorFlow source
 
 ```bash
 git clone https://github.com/tensorflow/tensorflow.git tensorflow_src
 cd tensorflow_src
-git checkout v2.6.0
+git checkout v2.12.0
 ```
 
-### Pull the CentOS 7.6.1810 x86_64 docker image and run
+### Pull the WasmEdge docker image base on CentOS 7.6.1810 x86_64 or aarch64 and run
 
 ```bash
-docker pull centos:7.6.1810
-docker run -it --rm -v $(pwd):/root/$(basename $(pwd)) centos:7.6.1810
+docker run -it --rm -v $(pwd):/root/$(basename $(pwd)) wasmedge/wasmedge:manylinux2014_x86_64
+# For aarch64:
+#   docker run -it --rm -v $(pwd):/root/$(basename $(pwd)) wasmedge/wasmedge:manylinux2014_aarch64
 ```
 
-### Update and install GCC-7.3.1 on CentOS 7.6.1810 x86_64
-
-```bash
-# In docker
-yum update -y
-yum install -y centos-release-scl
-yum install -y devtoolset-7-gcc*
-scl enable devtoolset-7 bash
-```
-
-The gcc installation path will be at `/opt/rh/devtoolset-7/root/usr/bin/`,
-and the gcc version can be checked with the command `gcc -v`.
-
-### Build and install Python 3.8.6 on CentOS 7.6.1810 x86_64
+### Build and install Python 3.8.6 on CentOS 7.6.1810 x86_64 or aarch64
 
 ```bash
 # In docker
 cd /root
-yum install -y wget make openssl-devel bzip2-devel libffi-devel
+yum update
+yum install -y wget bzip2-devel libffi-devel
 curl -sLO https://www.python.org/ftp/python/3.8.6/Python-3.8.6.tgz
 tar -zxf Python-3.8.6.tgz
 cd Python-3.8.6
-CXX=/opt/rh/devtoolset-7/root/usr/bin/g++ ./configure --enable-optimizations
+./configure --enable-optimizations
 make && make install
 ```
 
 The python installation path will be at `/usr/local/bin/python3.8`,
 and the version can be checked with the command `python3.8 --version`.
 
-### Install Bazelisk 1.7.4 on CentOS 7.6.1810 x86_64
+### Install Bazelisk 1.7.4 on CentOS 7.6.1810 x86_64 or aarch64
 
 ```bash
 # In docker
 cd /root
-curl -sLO https://github.com/bazelbuild/bazelisk/releases/download/v1.7.4/bazelisk-linux-amd64
+curl -sLO https://github.com/bazelbuild/bazelisk/releases/download/v1.16.0/bazelisk-linux-amd64
+# For aarch64:
+#   curl -sLO https://github.com/bazelbuild/bazelisk/releases/download/v1.16.0/bazelisk-linux-arm64
 chmod u+x bazelisk-linux-amd64
 mv bazelisk-linux-amd64 /usr/local/bin/bazel
 ```
 
-### Install the Python packages which are required by the TensorFlow project on CentOS 7.6.1810 x86_64
+### Install the Python packages which are required by the TensorFlow project on CentOS 7.6.1810 x86_64 or aarch64
 
 ```bash
 # In docker
@@ -81,44 +72,20 @@ pip3 install -U --user keras_applications --no-deps
 pip3 install -U --user keras_preprocessing --no-deps
 ```
 
-### Build the TensorFlow and TensorFlow-lite shared library on CentOS 7.6.1810 x86_64
+### Build the TensorFlow and TensorFlow-lite shared library on CentOS 7.6.1810 x86_64 or aarch64
 
 ```bash
 # In docker
-yum install -y git which
 cd /root/tensorflow_src
 PYTHON_BIN_PATH=/usr/local/bin/python3.8 USE_DEFAULT_PYTHON_LIB_PATH=1 TF_NEED_CUDA=0 TF_NEED_ROCM=0 TF_DOWNLOAD_CLANG=0 TF_NEED_MPI=0 CC_OPT_FLAGS="-march=native -Wno-sign-compare" TF_SET_ANDROID_WORKSPACE=0 ./configure
-BAZEL_LINKLIBS=-l%:libstdc++.a bazel build -c opt --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" //tensorflow:libtensorflow_cc.so
-BAZEL_LINKLIBS=-l%:libstdc++.a bazel build -c opt --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" //tensorflow/lite/c:libtensorflowlite_c.so
+bazel build -c opt --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" --config=monolithic //tensorflow:libtensorflow_cc.so
+bazel build -c opt --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" --config=monolithic //tensorflow/lite/c:libtensorflowlite_c.so
+bazel build -c opt --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" --config=monolithic //tensorflow/lite/delegates/flex:tensorflowlite_flex
 ```
 
-The TensorFlow shared library will be at `bazel-bin/tensorflow/libtensorflow.so.2.6.0`, `bazel-bin/tensorflow/libtensorflow_framework.so.2.6.0`, and `bazel-bin/tensorflow/lite/c/libtensorflowlite_c.so`.
+The TensorFlow shared library will be at `bazel-bin/tensorflow/libtensorflow.so.2.12.0`, `bazel-bin/tensorflow/libtensorflow_framework.so.2.12.0`, `bazel-bin/tensorflow/lite/c/libtensorflowlite_c.so`, and `bazel-bin/tensorflow/delegates/flex:tensorflowlite_flex.so`.
 
-## How to build TensorFlow-Lite shared library for manylinux2014_aarch64
-
-### [Clone the TensorFlow source](#clone-the-tensorflow-source)
-
-### Pull the WasmEdge manylinux2014_aarch64 docker image and run
-
-```bash
-docker pull wasmedge/wasmedge:manylinux2014_aarch64
-docker run -it --rm -v $(pwd):/root/$(basename $(pwd)) wasmedge/wasmedge:manylinux2014_aarch64
-```
-
-### Build the TensorFlow-Lite shared library for manylinux2014_aarch64 with cmake
-
-```bash
-# In docker
-mkdir -p /root/build
-cd /root/build
-cmake -DCMAKE_BUILD_TYPE=Release /root/tensorflow_src/tensorflow/lite/c
-./release.sh
-make
-```
-
-The TensorFlow-Lite shared library for aarch64 will be at `./libtensorflowlite_c.so`.
-
-## How to build on the MacOS systems - MacOS 10.15 x86_64
+## How to build on the MacOS systems - MacOS 10.15 x86_64 or MacOS 12 arm64
 
 ### [Clone the TensorFlow source on MacOS](#clone-the-tensorflow-source)
 
@@ -130,33 +97,37 @@ Install python with brew:
 brew install python
 ```
 
-### Install the Python packages which are required by the TensorFlow project on MacOS x86_64
+### Install the Python packages which are required by the TensorFlow project on MacOS x86_64 or MacOS 12 arm64
 
 ```bash
 pip3 install -U --user pip numpy wheel
 pip3 install -U --user keras_preprocessing --no-deps
 ```
 
-### Install Bazelisk 1.11.0 on MacOS 10.15 x86_64
+### Install Bazelisk 1.11.0 on MacOS 10.15 x86_64 or MacOS 12 arm64
 
 ```bash
-curl -sLO https://github.com/bazelbuild/bazelisk/releases/download/v1.11.0/bazelisk-darwin-amd64
+curl -sLO https://github.com/bazelbuild/bazelisk/releases/download/v1.16.0/bazelisk-darwin-amd64
+# For apple silicon:
+#   curl -sLO https://github.com/bazelbuild/bazelisk/releases/download/v1.16.0/bazelisk-darwin-arm64
 chmod u+x bazelisk-darwin-amd64
 mv bazelisk-darwin-amd64 /usr/local/bin/bazel
 ```
 
-### Build the TensorFlow and TensorFlow-lite shared library on MacOS 10.15 x86_64
+### Build the TensorFlow and TensorFlow-lite shared library on MacOS 10.15 x86_64 or MacOS 12 arm64
 
 ```bash
 # In the tensorflow source directory
 export CC=clang
 export CXX=clang++
-PYTHON_BIN_PATH=/usr/local/opt/python@3.9/bin/python3.9 USE_DEFAULT_PYTHON_LIB_PATH=1 TF_NEED_CUDA=0 TF_NEED_ROCM=0 TF_DOWNLOAD_CLANG=0 TF_NEED_MPI=0 CC_OPT_FLAGS="-march=native -Wno-sign-compare" TF_SET_ANDROID_WORKSPACE=0 TF_CONFIGURE_IOS=0 ./configure
+# Beware to use Apple Clang to build TensorFlow.
+PYTHON_BIN_PATH=/usr/local/opt/python@3.11/bin/python3.11 USE_DEFAULT_PYTHON_LIB_PATH=1 TF_NEED_CUDA=0 TF_NEED_ROCM=0 TF_DOWNLOAD_CLANG=0 TF_NEED_MPI=0 CC_OPT_FLAGS="-march=native -Wno-sign-compare" TF_SET_ANDROID_WORKSPACE=0 TF_CONFIGURE_IOS=0 ./configure
 bazel build -c opt //tensorflow:libtensorflow_cc.dylib
 bazel build -c opt //tensorflow/lite/c:libtensorflowlite_c.dylib
+bazel build -c opt --config=monolithic //tensorflow/lite/delegates/flex:tensorflowlite_flex
 ```
 
-The TensorFlow shared library will be at `bazel-bin/tensorflow/libtensorflow.2.6.0.dylib`, `bazel-bin/tensorflow/libtensorflow_framework.2.6.0.dylib`, and `bazel-bin/tensorflow/lite/c/libtensorflowlite_c.dylib`.
+The TensorFlow shared library will be at `bazel-bin/tensorflow/libtensorflow.2.12.0.dylib`, `bazel-bin/tensorflow/libtensorflow_framework.2.12.0.dylib`, `bazel-bin/tensorflow/lite/c/libtensorflowlite_c.dylib`, and `bazel-bin/tensorflow/delegates/flex:tensorflowlite_flex.dylib`.
 
 ## How to build TensorFlow-Lite shared library for Android platforms
 
@@ -224,16 +195,47 @@ The TensorFlow-Lite shared library for Android will be at `bazel-bin/tensorflow/
 
 ## Minimum requirements of our pre-built shared libraries
 
-| Pre-built shared library                                  | GLIBC | GLIBCXX | CXXABI |
-| --------------------------------------------------------- | ----- | ------- | ------ |
-| libtensorflow_cc.so.2.6.0 for manylinux2014_x86_64        | 2.17  | 3.4.19  | 1.3.7  |
-| libtensorflow_framework.so.2.6.0 for manylinux2014_x86_64 | 2.16  | 3.4.19  | 1.3.7  |
-| libtensorflowlite_c.so for manylinux2014_x86_64           | 2.14  | 3.4.19  | 1.3.5  |
-| libtensorflowlite_c.so for manylinux2014_aarch64          | 2.17  | None    | None   |
-| libtensorflowlite_c.so for android_aarch64                | None  | None    | None   |
+| Pre-built shared library   | Platform              | TensorFlow Tag | GLIBC | GLIBCXX | CXXABI |
+| -------------------------- | --------------------- | -------------- | ----- | ------- | ------ |
+| libtensorflow.so           | manylinux2014_x86_64  |     2.6.0      | 2.17  | 3.4.19  | 1.3.7  |
+| libtensorflow_cc.so        | manylinux2014_x86_64  |     2.6.0      | 2.17  | 3.4.19  | 1.3.7  |
+| libtensorflow_framework.so | manylinux2014_x86_64  |     2.6.0      | 2.16  | 3.4.19  | 1.3.7  |
+| libtensorflowlite_c.so     | manylinux2014_x86_64  |     2.6.0      | 2.14  | 3.4.19  | 1.3.5  |
+| libtensorflow_cc.so        | manylinux2014_x86_64  |     2.12.0     | None  | None    | None   |
+| libtensorflow_framework.so | manylinux2014_x86_64  |     2.12.0     | None  | None    | None   |
+| libtensorflowlite_c.so     | manylinux2014_x86_64  |     2.12.0     | None  | None    | None   |
+| libtensorflowlite_flex.so  | manylinux2014_x86_64  |     2.12.0     | None  | None    | None   |
+| libtensorflowlite_c.so     | manylinux2014_aarch64 |     2.6.0      | 2.17  | None    | None   |
+| libtensorflow_cc.so        | manylinux2014_aarch64 |     2.12.0     | None  | None    | None   |
+| libtensorflow_framework.so | manylinux2014_aarch64 |     2.12.0     | None  | None    | None   |
+| libtensorflowlite_c.so     | manylinux2014_aarch64 |     2.12.0     | None  | None    | None   |
+| libtensorflowlite_flex.so  | manylinux2014_aarch64 |     2.12.0     | None  | None    | None   |
+| libtensorflowlite_c.so     | android_aarch64       |     2.6.0      | None  | None    | None   |
 
-| Pre-built shared library                                  | Minimum MacOS version |
-| --------------------------------------------------------- | --------------------- |
-| libtensorflow_cc.2.6.0.dylib for darwin_x86_64            |          10.15        |
-| libtensorflow_framework.2.6.0.dylib for darwin_x86_64     |          10.15        |
-| libtensorflowlite_c.2.6.0.dylib for darwin_x86_64         |          10.15        |
+| Pre-built shared library      | Platform      | TensorFlow Tag | Minimum MacOS version |
+| ----------------------------- | ------------- | -------------- | --------------------- |
+| libtensorflow.dylib           | darwin_x86_64 |     2.6.0      |          10.15        |
+| libtensorflow_cc.dylib        | darwin_x86_64 |     2.6.0      |          10.15        |
+| libtensorflow_framework.dylib | darwin_x86_64 |     2.6.0      |          10.15        |
+| libtensorflowlite_c.dylib     | darwin_x86_64 |     2.6.0      |          10.15        |
+| libtensorflow_cc.dylib        | darwin_x86_64 |     2.12.0     |          10.15        |
+| libtensorflow_framework.dylib | darwin_x86_64 |     2.12.0     |          10.15        |
+| libtensorflowlite_c.dylib     | darwin_x86_64 |     2.12.0     |          10.15        |
+| libtensorflowlite_flex.dylib  | darwin_x86_64 |     2.12.0     |          10.15        |
+| libtensorflow_cc.dylib        | darwin_arm64  |     2.12.0     |          12.0         |
+| libtensorflow_framework.dylib | darwin_arm64  |     2.12.0     |          12.0         |
+| libtensorflowlite_c.dylib     | darwin_arm64  |     2.12.0     |          12.0         |
+| libtensorflowlite_flex.dylib  | darwin_arm64  |     2.12.0     |          12.0         |
+
+## Active Releases
+
+- [TF-2.6.0](https://github.com/second-state/WasmEdge-tensorflow-deps/releases/tag/TF-2.6.0): TensorFlow 2.6.0 C library
+  - TensorFlow 2.6.0 C shared library for `manylinux2014_x86_64` and `darwin_x86_64`.
+  - TensorFlow-Lite 2.6.0 C shared library for `manylinux2014_x86_64`, `manylinux2014_aarch64`, `darwin_x86_64`, and `android_aarch64`.
+- [TF-2.6.0-CC](https://github.com/second-state/WasmEdge-tensorflow-deps/releases/tag/TF-2.6.0-CC): TensorFlow 2.6.0 C++ library
+  - TensorFlow 2.6.0 C++ shared library for `manylinux2014_x86_64` and `darwin_x86_64`.
+  - TensorFlow-Lite 2.6.0 C shared library for `manylinux2014_x86_64`, `manylinux2014_aarch64`, `darwin_x86_64`, and `android_aarch64`.
+- [TF-2.12.0-CC](https://github.com/second-state/WasmEdge-tensorflow-deps/releases/tag/TF-2.12.0-CC): TensorFlow 2.12.0 C++ library
+  - TensorFlow 2.12.0 C++ shared library for `manylinux2014_x86_64`, `manylinux2014_aarch64`, `darwin_x86_64`, and `darwin_arm64`.
+  - TensorFlow-Lite 2.12.0 C shared library with Flex delegate shared library for `manylinux2014_x86_64`, `manylinux2014_aarch64`, `darwin_x86_64`, and `darwin_arm64`.
+  - TensorFlow-Lite 2.6.0 C shared library for `android_aarch64`. (NEED TO BE UPDATED)
