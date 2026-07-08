@@ -18,24 +18,7 @@ limitations under the License.
 
 #include <stddef.h>
 
-// Macro to control visibility of exported symbols in the shared library (.so,
-// .dylib, .dll).
-// This duplicates the TF_EXPORT macro definition in
-// tensorflow/core/platform/macros.h in order to keep this .h file independent
-// of any other includes.
-#ifdef SWIG
-#define TF_CAPI_EXPORT
-#else
-#if defined(_WIN32)
-#ifdef TF_COMPILE_LIBRARY
-#define TF_CAPI_EXPORT __declspec(dllexport)
-#else
-#define TF_CAPI_EXPORT __declspec(dllimport)
-#endif  // TF_COMPILE_LIBRARY
-#else
-#define TF_CAPI_EXPORT __attribute__((visibility("default")))
-#endif  // _WIN32
-#endif  // SWIG
+#include "tensorflow/c/c_api_macros.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -72,6 +55,17 @@ typedef enum TF_DataType {
   TF_FLOAT8_E5M2 = 24,    // 5 exponent bits, 2 mantissa bits.
   TF_FLOAT8_E4M3FN = 25,  // 4 exponent bits, 3 mantissa bits, finite-only, with
                           // 2 NaNs (0bS1111111).
+  TF_FLOAT8_E4M3FNUZ = 26,     // 4 exponent bits, 3 mantissa bits,
+                               // finite-only,with NaN.
+  TF_FLOAT8_E4M3B11FNUZ = 27,  // 4 exponent bits, 3 mantissa bits, 11 bits
+                               // bias, finite-only, with NaNs.
+  TF_FLOAT8_E5M2FNUZ = 28,     // 5 exponent bits, 2 mantissa bits,
+                               // finite-only,with NaN.
+  TF_INT4 = 29,
+  TF_UINT4 = 30,
+  TF_INT2 = 31,
+  TF_UINT2 = 32,
+  TF_FLOAT4_E2M1FN = 33  // 2 exponent bits, 1 mantissa bit, finite-only
 } TF_DataType;
 
 // TF_DataTypeSize returns the sizeof() for the underlying type corresponding

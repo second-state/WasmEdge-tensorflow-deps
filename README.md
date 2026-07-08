@@ -1,12 +1,14 @@
 # WasmEdge-Tensorflow Dependencies
 
-This repository provides pre-built dependencies for the [WasmEdge with TensorFlow extension project](https://github.com/second-state/WasmEdge-tensorflow).
+This repository provides pre-built dependencies for the [WasmEdge](https://github.com/WasmEdge/WasmEdge) with TensorFlow plug-in.
 
 ## Motivation
 
-The TensorFlow official repository only provides a shared library which is compiled on Ubuntu 18.04. Hence, we cannot use this pre-built shared library on some legacy systems such as CentOS 7.6.1810. The obvious issue is that the GLIBC version is too old, so the pre-built shared library cannot be executed.
+The TensorFlow project no longer publishes the standalone `libtensorflow` C/C++ shared library packages — the official pre-built libraries only ship inside the Python pip wheels. Projects which link TensorFlow directly, such as the WasmEdge plug-ins, still need standalone shared libraries that run on the manylinux_2_28 (glibc >= 2.28) platforms.
 
-But building the dependencies on the legacy system takes lots of time. To reduce the compilation time, we create this project to compile and release the pre-built TensorFlow shared library.
+But building TensorFlow takes lots of time. To reduce the compilation time, we create this project to compile and release the pre-built standalone TensorFlow and TensorFlow-Lite shared libraries for the manylinux_2_28, macOS, and Android platforms.
+
+The headers vendored in this repository (`tensorflow/`, `tsl/`, `xla/` at the repo root) are the include closure of the C API headers used by WasmEdge, extracted from the v2.21.0 source tree.
 
 ## License
 
@@ -16,187 +18,145 @@ This project is under the Apache-2.0 License as the same as the TensorFlow proje
 
 - [TensorFlow](https://github.com/tensorflow/tensorflow)
 
-## How to build on the legacy operating system - CentOS 7.6.1810 x86_64 or aarch64
+## How to build the TensorFlow 2.21.0 dependencies
 
-### Clone the TensorFlow source
+All libraries are built from the **pristine `v2.21.0` tag — no source patch, no `./configure`, no local Python** (hermetic Python via `--repo_env=HERMETIC_PYTHON_VERSION=3.12`).
+
+The TensorFlow asset is the **two-library pywrap pair** (`libtensorflow_cc` + `libtensorflow_framework`, SONAME-form filenames) — the same libraries the official TensorFlow pip wheels ship, built by the same pipeline. Consumers must link **both**, `libtensorflow_cc` first (some C API symbols are defined in `libtensorflow_framework`).
+
+Source, for every platform:
 
 ```bash
 git clone https://github.com/tensorflow/tensorflow.git tensorflow_src
-cd tensorflow_src
-git checkout v2.12.0
+cd tensorflow_src && git checkout v2.21.0
 ```
 
-### Pull the WasmEdge docker image base on CentOS 7.6.1810 x86_64 or aarch64 and run
+### Build on macOS
 
-```bash
-docker run -it --rm -v $(pwd):/root/$(basename $(pwd)) wasmedge/wasmedge:manylinux2014_x86_64
-# For aarch64:
-#   docker run -it --rm -v $(pwd):/root/$(basename $(pwd)) wasmedge/wasmedge:manylinux2014_aarch64
-```
+1. Environment settings
 
-### Build and install Python 3.8.6 on CentOS 7.6.1810 x86_64 or aarch64
+   - Full Xcode (the Command Line Tools alone are not enough), selected as the developer directory (`xcode-select -p`); ~50 GB free disk.
+   - `brew install bazelisk` — it fetches bazel 7.7.0 from `tensorflow/.bazelversion`; always build with `bazelisk`, never a standalone `bazel`.
 
-```bash
-# In docker
-cd /root
-yum update
-yum install -y wget bzip2-devel libffi-devel
-curl -sLO https://www.python.org/ftp/python/3.8.6/Python-3.8.6.tgz
-tar -zxf Python-3.8.6.tgz
-cd Python-3.8.6
-./configure --enable-optimizations
-make && make install
-```
+2. Build steps on darwin_arm64 (macOS 12+)
 
-The python installation path will be at `/usr/local/bin/python3.8`,
-and the version can be checked with the command `python3.8 --version`.
+   ```bash
+   # TensorFlow pair:
+   bazelisk build --config=release_macos_arm64 \
+     --repo_env=HERMETIC_PYTHON_VERSION=3.12 \
+     //tensorflow/python:libtensorflow_cc.2.dylib \
+     //tensorflow/python:libtensorflow_framework.2.dylib
+   # -> bazel-bin/tensorflow/python/libtensorflow_cc.2.dylib, libtensorflow_framework.2.dylib
 
-### Install Bazelisk 1.16.0 on CentOS 7.6.1810 x86_64 or aarch64
+   # TensorFlow-Lite C library + flex delegate:
+   bazelisk build --config=release_macos_arm64 --config=monolithic \
+     --repo_env=HERMETIC_PYTHON_VERSION=3.12 \
+     //tensorflow/lite/c:libtensorflowlite_c.dylib \
+     //tensorflow/lite/delegates/flex:tensorflowlite_flex
+   # -> bazel-bin/tensorflow/lite/c/libtensorflowlite_c.dylib,
+   #    bazel-bin/tensorflow/lite/delegates/flex/libtensorflowlite_flex.dylib
+   ```
 
-```bash
-# In docker
-cd /root
-curl -sLO https://github.com/bazelbuild/bazelisk/releases/download/v1.16.0/bazelisk-linux-amd64
-# For aarch64:
-#   curl -sLO https://github.com/bazelbuild/bazelisk/releases/download/v1.16.0/bazelisk-linux-arm64
-chmod u+x bazelisk-linux-amd64
-mv bazelisk-linux-amd64 /usr/local/bin/bazel
-# For aarch64:
-#   chmod u+x bazelisk-linux-arm64
-#   mv bazelisk-linux-arm64 /usr/local/bin/bazel
-```
+3. Build steps on darwin_x86_64 (macOS 10.15+)
 
-### Install the Python packages which are required by the TensorFlow project on CentOS 7.6.1810 x86_64 or aarch64
+   The flag set below is `release_macos_x86` without its **host** AVX flag, plus three additions: the oneDNN contraction-kernel opt-out and a **target-only** AVX2/FMA re-enable that forces RUY's x86 SIMD kernels on. Two things go wrong otherwise at v2.21.0:
 
-```bash
-# In docker
-pip3 install -U --user pip numpy wheel packaging requests opt_einsum
-pip3 install -U --user keras_preprocessing --no-deps
-```
+   - The stock `--config=release_macos_x86` **fails to build**: its `--host_copt=-mavx` is applied to the arm64 slice of gRPC's `universal_binary` codegen tools (built even on Intel), where `-mavx` is illegal; and macOS x86 has no real oneDNN, so the `_with_mkl` contraction kernel can't find `dnnl.h`.
+   - Even once it builds, RUY (the TF-Lite / TF matmul kernels) **disables all of its x86 SIMD paths on Apple** — `ruy/platform.h` gates `RUY_PLATFORM_X86_ENHANCEMENTS` on `__linux__` clang only. With no AVX2 kernel, RUY falls back to its incomplete SSE4.2 8-bit kernel stub and **segfaults at runtime on quantized (uint8) inference**. `--copt=-DRUY_FORCE_ENABLE_X86_ENHANCEMENTS --copt=-mavx2 --copt=-mfma --copt=-mf16c` restores RUY's real `Kernel8bitAvx2`. These are target-only `--copt`s, so they do not reach the gRPC arm64 slice and do not reintroduce the build failure above.
 
-### Build the TensorFlow and TensorFlow-lite shared library on CentOS 7.6.1810 x86_64 or aarch64
+   This makes the darwin_x86_64 libraries AVX2-baseline — safe on every Intel Mac (all Haswell+).
 
-```bash
-# In docker
-cd /root/tensorflow_src
-PYTHON_BIN_PATH=/usr/local/bin/python3.8 USE_DEFAULT_PYTHON_LIB_PATH=1 TF_NEED_CUDA=0 TF_NEED_ROCM=0 TF_DOWNLOAD_CLANG=0 TF_NEED_MPI=0 CC_OPT_FLAGS="-march=native -Wno-sign-compare" TF_SET_ANDROID_WORKSPACE=0 ./configure
-BAZEL_LINKLIBS=-l%:libstdc++.a bazel build -c opt --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" //tensorflow:libtensorflow_cc.so
-BAZEL_LINKLIBS=-l%:libstdc++.a bazel build -c opt --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" //tensorflow/lite/c:libtensorflowlite_c.so
-BAZEL_LINKLIBS=-l%:libstdc++.a bazel build -c opt --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" --config=monolithic //tensorflow/lite/delegates/flex:tensorflowlite_flex
-```
+   ```bash
+   # TensorFlow pair:
+   bazelisk build --config=release_macos_base --cpu=darwin \
+     --macos_minimum_os=10.15 --action_env=MACOSX_DEPLOYMENT_TARGET=10.15 \
+     --define tensorflow_mkldnn_contraction_kernel=0 \
+     --copt=-DRUY_FORCE_ENABLE_X86_ENHANCEMENTS --copt=-mavx2 --copt=-mfma --copt=-mf16c \
+     --repo_env=HERMETIC_PYTHON_VERSION=3.12 \
+     //tensorflow/python:libtensorflow_cc.2.dylib \
+     //tensorflow/python:libtensorflow_framework.2.dylib
+   # -> bazel-bin/tensorflow/python/libtensorflow_cc.2.dylib, libtensorflow_framework.2.dylib
 
-The TensorFlow shared library will be at `bazel-bin/tensorflow/libtensorflow.so.2.12.0`, `bazel-bin/tensorflow/libtensorflow_framework.so.2.12.0`, `bazel-bin/tensorflow/lite/c/libtensorflowlite_c.so`, and `bazel-bin/tensorflow/delegates/flex:tensorflowlite_flex.so`.
+   # TensorFlow-Lite C library + flex delegate:
+   bazelisk build --config=release_macos_base --cpu=darwin \
+     --macos_minimum_os=10.15 --action_env=MACOSX_DEPLOYMENT_TARGET=10.15 \
+     --define tensorflow_mkldnn_contraction_kernel=0 --config=monolithic \
+     --copt=-DRUY_FORCE_ENABLE_X86_ENHANCEMENTS --copt=-mavx2 --copt=-mfma --copt=-mf16c \
+     --repo_env=HERMETIC_PYTHON_VERSION=3.12 \
+     //tensorflow/lite/c:libtensorflowlite_c.dylib \
+     //tensorflow/lite/delegates/flex:tensorflowlite_flex
+   # -> bazel-bin/tensorflow/lite/c/libtensorflowlite_c.dylib,
+   #    bazel-bin/tensorflow/lite/delegates/flex/libtensorflowlite_flex.dylib
+   ```
 
-## How to build on the MacOS systems - MacOS 10.15 x86_64 or MacOS 12 arm64
+### Build on Linux (manylinux_2_28_x86_64 / manylinux_2_28_aarch64)
 
-### [Clone the TensorFlow source on MacOS](#clone-the-tensorflow-source)
+Measured floors: GLIBC 2.27, GLIBCXX 3.4.22, CXXABI 1.3.11 — the libraries run on any manylinux_2_28 (glibc ≥ 2.28) system. x86_64 baseline is AVX; aarch64 is armv8-a.
 
-### [Install Homebrew](https://brew.sh/)
+1. Environment settings
 
-Install python with brew:
+   Docker is required; the build runs in a **manylinux_2_34** container (the hermetic clang prebuilts need build-host glibc ≥ 2.29, so manylinux_2_28 images cannot host the build — the artifacts still keep the GLIBC 2.27 floor); ~50 GB free disk. Start the container from the `tensorflow_src` checkout, then install xxd and bazelisk:
 
-```bash
-brew install python
-```
+   ```bash
+   docker run -it --rm -v "$PWD":/root/tensorflow_src -w /root/tensorflow_src \
+     quay.io/pypa/manylinux_2_34_x86_64 bash
+   # aarch64: quay.io/pypa/manylinux_2_34_aarch64
 
-### Install the Python packages which are required by the TensorFlow project on MacOS x86_64 or MacOS 12 arm64
+   # In the container:
+   dnf -q -y install vim-common   # provides xxd
+   curl -sLo /usr/local/bin/bazel \
+     https://github.com/bazelbuild/bazelisk/releases/download/v1.26.0/bazelisk-linux-amd64 \
+     && chmod +x /usr/local/bin/bazel
+   # aarch64: .../bazelisk-linux-arm64
+   ```
 
-```bash
-pip3 install -U --user pip numpy wheel
-pip3 install -U --user keras_preprocessing --no-deps
-```
+2. Build steps
 
-### Install Bazelisk 1.16.0 on MacOS 10.15 x86_64 or MacOS 12 arm64
+   ```bash
+   # x86_64 shown; aarch64: --config=release_arm64_linux
+   bazel build --config=release_cpu_linux \
+     --repo_env=HERMETIC_PYTHON_VERSION=3.12 \
+     //tensorflow/python:libtensorflow_cc.so.2 \
+     //tensorflow/python:libtensorflow_framework.so.2
+   # -> bazel-bin/tensorflow/python/libtensorflow_cc.so.2, libtensorflow_framework.so.2
 
-```bash
-curl -sLO https://github.com/bazelbuild/bazelisk/releases/download/v1.16.0/bazelisk-darwin-amd64
-# For Apple M series:
-#   curl -sLO https://github.com/bazelbuild/bazelisk/releases/download/v1.16.0/bazelisk-darwin-arm64
-chmod u+x bazelisk-darwin-amd64
-mv bazelisk-darwin-amd64 /usr/local/bin/bazel
-# For Apple M series:
-#   chmod u+x bazelisk-darwin-arm64
-#   mv bazelisk-darwin-arm64 /usr/local/bin/bazel
-```
+   # TensorFlow-Lite C library + flex delegate:
+   bazel build --config=release_cpu_linux --config=monolithic \
+     --repo_env=HERMETIC_PYTHON_VERSION=3.12 \
+     //tensorflow/lite/c:libtensorflowlite_c.so \
+     //tensorflow/lite/delegates/flex:tensorflowlite_flex
+   # -> bazel-bin/tensorflow/lite/c/libtensorflowlite_c.so,
+   #    bazel-bin/tensorflow/lite/delegates/flex/libtensorflowlite_flex.so
+   ```
 
-### Build the TensorFlow and TensorFlow-lite shared library on MacOS 10.15 x86_64 or MacOS 12 arm64
+### Build on Android (android_aarch64, TensorFlow-Lite only)
 
-```bash
-# In the tensorflow source directory
-export CC=clang
-export CXX=clang++
-# Beware to use Apple Clang to build TensorFlow.
-PYTHON_BIN_PATH=/usr/local/opt/python@3.11/bin/python3.11 USE_DEFAULT_PYTHON_LIB_PATH=1 TF_NEED_CUDA=0 TF_NEED_ROCM=0 TF_DOWNLOAD_CLANG=0 TF_NEED_MPI=0 CC_OPT_FLAGS="-march=native -Wno-sign-compare" TF_SET_ANDROID_WORKSPACE=0 TF_CONFIGURE_IOS=0 ./configure
-bazel build -c opt //tensorflow:libtensorflow_cc.dylib
-bazel build -c opt //tensorflow/lite/c:libtensorflowlite_c.dylib
-bazel build -c opt --config=monolithic //tensorflow/lite/delegates/flex:tensorflowlite_flex
-```
+The Android asset contains only `libtensorflowlite_c.so` (arm64-v8a, minSdkVersion 23).
 
-The TensorFlow shared library will be at `bazel-bin/tensorflow/libtensorflow.2.12.0.dylib`, `bazel-bin/tensorflow/libtensorflow_framework.2.12.0.dylib`, `bazel-bin/tensorflow/lite/c/libtensorflowlite_c.dylib`, and `bazel-bin/tensorflow/delegates/flex:tensorflowlite_flex.dylib`.
+1. Environment settings
 
-## How to build TensorFlow-Lite shared library for Android platforms
+   - A macOS or Linux x86_64 host with bazelisk (as above).
+   - The Android **NDK r25c** from `https://dl.google.com/android/repository/android-ndk-r25c-<darwin|linux>.zip` — no Android SDK, no Java.
 
-### [Clone the TensorFlow source on host system](#clone-the-tensorflow-source)
+2. Build steps
 
-### Pull the WasmEdge:latest (based on Ubuntu 20.04) docker image and run
+   ```bash
+   bazelisk build \
+     --config=android_arm64 \
+     --repo_env=ANDROID_NDK_HOME=/path/to/android-ndk-r25c \
+     --repo_env=ANDROID_NDK_API_LEVEL=23 \
+     --repo_env=ANDROID_NDK_VERSION=25 \
+     --repo_env=HERMETIC_PYTHON_VERSION=3.12 \
+     //tensorflow/lite/c:tensorflowlite_c
+   # -> bazel-bin/tensorflow/lite/c/libtensorflowlite_c.so
+   ```
 
-```bash
-docker pull wasmedge/wasmedge:latest
-docker run -it --rm -v $(pwd):/root/$(basename $(pwd)) wasmedge/wasmedge:latest
-```
+On every platform, copy the libraries out of `bazel-bin` with `cp -L` (dereferences bazel's symlinks) and `chmod 755`.
 
-### Install Bazel 5.3.0 on Ubuntu 20.04
+## Legacy build guides
 
-```bash
-# In docker
-apt update && apt install -y unzip
-cd /root
-curl -sLO https://github.com/bazelbuild/bazel/releases/download/5.3.0/bazel-5.3.0-installer-linux-x86_64.sh
-chmod u+x bazel-5.3.0-installer-linux-x86_64.sh
-./bazel-5.3.0-installer-linux-x86_64.sh
-```
-
-### Download and extract the Android command line tools on Ubuntu 20.04
-
-```bash
-# In docker
-cd /root
-curl -sLO https://dl.google.com/android/repository/commandlinetools-linux-8092744_latest.zip
-unzip -q commandlinetools-linux-8092744_latest.zip
-```
-
-### Install the Android SDK and NDK through the sdkmanager on Ubuntu 20.04
-
-```bash
-# In docker
-apt update && apt install -y openjdk-8-jdk
-cd /root
-export ANDROID_SDK_HOME=/root/android-sdk
-yes | ./cmdline-tools/bin/sdkmanager --sdk_root=$ANDROID_SDK_HOME --licenses
-./cmdline-tools/bin/sdkmanager "platform-tools" "platforms;android-23" --sdk_root=$ANDROID_SDK_HOME
-./cmdline-tools/bin/sdkmanager "build-tools;30.0.0" --sdk_root=$ANDROID_SDK_HOME
-./cmdline-tools/bin/sdkmanager "ndk;21.4.7075529" --sdk_root=$ANDROID_SDK_HOME
-```
-
-### Install the numpy on Ubuntu 20.04
-
-```bash
-# In docker
-apt update && apt install -y pip
-ln -s /usr/bin/python3 /usr/bin/python
-pip3 install -U --user numpy
-```
-
-### Build the TensorFlow-lite shared library for Android
-
-```bash
-# In docker
-cd /root/tensorflow_src
-PYTHON_BIN_PATH=/usr/bin/python3 USE_DEFAULT_PYTHON_LIB_PATH=1 TF_NEED_CUDA=0 TF_NEED_ROCM=0 TF_DOWNLOAD_CLANG=0 TF_NEED_MPI=0 CC_OPT_FLAGS="-march=native -Wno-sign-compare" TF_SET_ANDROID_WORKSPACE=1 ANDROID_NDK_HOME=$ANDROID_SDK_HOME/ndk/21.4.7075529 ANDROID_NDK_API_LEVEL=23 ANDROID_API_LEVEL=23 ANDROID_BUILD_TOOLS_VERSION="30.0.0" ./configure
-bazel build --cxxopt=-std=c++1z --config=android --cpu=arm64-v8a --crosstool_top=//external:android/crosstool --host_crosstool_top=@bazel_tools//tools/cpp:toolchain //tensorflow/lite/c:tensorflowlite_c --verbose_failures --copt=-w
-```
-
-The TensorFlow-Lite shared library for Android will be at `bazel-bin/tensorflow/lite/c/libtensorflowlite_c.so`.
+- [LEGACY_BUILD_2.6.md](LEGACY_BUILD_2.6.md) — TensorFlow 2.6.0 (CentOS 7.6.1810, MacOS, Android)
+- [LEGACY_BUILD_2.12.md](LEGACY_BUILD_2.12.md) — TensorFlow 2.12.0 (CentOS 7.6.1810, MacOS, Android)
 
 ## Minimum requirements of our pre-built shared libraries
 
@@ -217,6 +177,15 @@ The TensorFlow-Lite shared library for Android will be at `bazel-bin/tensorflow/
 | libtensorflowlite_flex.so  | manylinux2014_aarch64 |     2.12.0     | 2.17  | 3.4.19  | 1.3.7  |
 | libtensorflowlite_c.so     | android_aarch64       |     2.6.0      | None  | None    | None   |
 | libtensorflowlite_c.so     | android_aarch64       |     2.12.0     | None  | None    | None   |
+| libtensorflow_cc.so.2        | manylinux_2_28_x86_64  |     2.21.0     | 2.27  | 3.4.22  | 1.3.11 |
+| libtensorflow_framework.so.2 | manylinux_2_28_x86_64  |     2.21.0     | 2.27  | 3.4.22  | 1.3.11 |
+| libtensorflowlite_c.so       | manylinux_2_28_x86_64  |     2.21.0     | 2.27  | 3.4.22  | 1.3.5  |
+| libtensorflowlite_flex.so    | manylinux_2_28_x86_64  |     2.21.0     | 2.27  | 3.4.22  | 1.3.11 |
+| libtensorflow_cc.so.2        | manylinux_2_28_aarch64 |     2.21.0     | 2.27  | 3.4.22  | 1.3.11 |
+| libtensorflow_framework.so.2 | manylinux_2_28_aarch64 |     2.21.0     | 2.27  | 3.4.22  | 1.3.11 |
+| libtensorflowlite_c.so       | manylinux_2_28_aarch64 |     2.21.0     | 2.27  | 3.4.22  | 1.3.5  |
+| libtensorflowlite_flex.so    | manylinux_2_28_aarch64 |     2.21.0     | 2.27  | 3.4.22  | 1.3.11 |
+| libtensorflowlite_c.so       | android_aarch64        |     2.21.0     | None  | None    | None   |
 
 | Pre-built shared library      | Platform      | TensorFlow Tag | Minimum MacOS version |
 | ----------------------------- | ------------- | -------------- | --------------------- |
@@ -232,6 +201,14 @@ The TensorFlow-Lite shared library for Android will be at `bazel-bin/tensorflow/
 | libtensorflow_framework.dylib | darwin_arm64  |     2.12.0     |          12.0         |
 | libtensorflowlite_c.dylib     | darwin_arm64  |     2.12.0     |          12.0         |
 | libtensorflowlite_flex.dylib  | darwin_arm64  |     2.12.0     |          12.0         |
+| libtensorflow_cc.2.dylib        | darwin_x86_64 |     2.21.0     |          10.15        |
+| libtensorflow_framework.2.dylib | darwin_x86_64 |     2.21.0     |          10.15        |
+| libtensorflowlite_c.dylib       | darwin_x86_64 |     2.21.0     |          10.15        |
+| libtensorflowlite_flex.dylib    | darwin_x86_64 |     2.21.0     |          10.15        |
+| libtensorflow_cc.2.dylib        | darwin_arm64  |     2.21.0     |          12.0         |
+| libtensorflow_framework.2.dylib | darwin_arm64  |     2.21.0     |          12.0         |
+| libtensorflowlite_c.dylib       | darwin_arm64  |     2.21.0     |          12.0         |
+| libtensorflowlite_flex.dylib    | darwin_arm64  |     2.21.0     |          12.0         |
 
 ## Active Releases
 
@@ -245,3 +222,7 @@ The TensorFlow-Lite shared library for Android will be at `bazel-bin/tensorflow/
   - TensorFlow 2.12.0 C++ shared library for `manylinux2014_x86_64`, `manylinux2014_aarch64`, `darwin_x86_64`, and `darwin_arm64`.
   - TensorFlow-Lite 2.12.0 C shared library with Flex delegate shared library for `manylinux2014_x86_64`, `manylinux2014_aarch64`, `darwin_x86_64`, and `darwin_arm64`.
   - TensorFlow-Lite 2.12.0 C shared library for `android_aarch64`.
+- [TF-2.21.0-CC](https://github.com/second-state/WasmEdge-tensorflow-deps/releases/tag/TF-2.21.0-CC): TensorFlow 2.21.0 C++ library
+  - TensorFlow 2.21.0 C++ shared library for `manylinux_2_28_x86_64`, `manylinux_2_28_aarch64`, `darwin_x86_64`, and `darwin_arm64`.
+  - TensorFlow-Lite 2.21.0 C shared library with Flex delegate shared library for the same platforms.
+  - TensorFlow-Lite 2.21.0 C shared library for `android_aarch64`.
